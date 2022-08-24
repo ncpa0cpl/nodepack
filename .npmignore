@@ -12,4 +12,4 @@ scripts
 .prettierrc.json
 jest.config.js
 yarn-error.log
-git-hook-tasks.config.js
+git-hook-tasks.config.json
