@@ -18,7 +18,7 @@
     "ts-node": "^10.9.1",
     "typescript": "^4.7.4"
   },
-  "name": "nodepack",
+  "name": "@ncpa0cpl/nodepack",
   "version": "1.0.0",
   "main": "./dist/legacy/index.js",
   "types": "./dist/types/index.d.ts",
@@ -34,20 +34,20 @@
     "fix:prettier": "prettier -w ./src .",
     "test:jest": "jest --coverage",
     "test:lint": "eslint .",
-    "test:prettier": "prettier -c ./src && prettier -c ./__tests__",
+    "test:prettier": "prettier -c ./src",
     "test:tsc": "tsc --noEmit",
     "build": "ts-node -P ./tsconfig.build.json ./scripts/build.ts && yarn generate-declarations",
     "generate-declarations": "tsc --declaration --emitDeclarationOnly --outDir ./dist/types"
   },
   "keywords": [],
   "repository": {
-    "url": ""
+    "url": "https://github.com/ncpa0cpl/nodepack"
   },
-  "description": "",
+  "description": "Simple packaging script for node libraries based on ESBuild",
   "license": "MIT",
   "author": {
-    "name": "",
-    "email": ""
+    "name": "Szymon Bretner (ncpa0cpl)",
+    "email": "szymonb21@gmail.com"
   },
   "dependencies": {
     "esbuild": "^0.15.5",
