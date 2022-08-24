@@ -1,6 +1,6 @@
 import esbuild from "esbuild";
 import path from "path";
-import type { BuildConfig } from ".";
+import type { BuildConfig, NodePackScriptTarget } from ".";
 import { changeExt } from "./utilities/change-ext";
 import { ESbuildAddImportExtensionsPlugin } from "./utilities/esbuild-add-import-extensions-plugin";
 
@@ -12,7 +12,7 @@ export class Builder {
   isCjs = false;
   isEsm = false;
   isLegacy = false;
-  target: esbuild.BuildOptions["target"] = "es6";
+  target: NodePackScriptTarget = "es6";
   tsConfig: string | undefined;
   additionalESbuildOptions: esbuild.BuildOptions | undefined;
 

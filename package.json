@@ -36,8 +36,7 @@
     "test:lint": "eslint .",
     "test:prettier": "prettier -c ./src",
     "test:tsc": "tsc --noEmit",
-    "build": "ts-node -P ./tsconfig.build.json ./scripts/build.ts && yarn generate-declarations",
-    "generate-declarations": "tsc --declaration --emitDeclarationOnly --outDir ./dist/types"
+    "build": "ts-node -P ./tsconfig.build.json ./scripts/build.ts"
   },
   "keywords": [],
   "repository": {
@@ -50,6 +49,7 @@
     "email": "szymonb21@gmail.com"
   },
   "dependencies": {
+    "@ts-morph/bootstrap": "^0.16.0",
     "esbuild": "^0.15.5",
     "node-os-walk": "^1.0.0"
   }
