@@ -51,6 +51,6 @@
   "dependencies": {
     "@ts-morph/bootstrap": "^0.16.0",
     "esbuild": "^0.15.5",
-    "node-os-walk": "^1.0.0"
+    "node-os-walk": "^1.0.1"
   }
 }
