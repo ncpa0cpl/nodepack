@@ -3,6 +3,7 @@ import { walk } from "node-os-walk";
 import path from "path";
 import { Builder } from "./builder";
 import { DeclarationBuilder } from "./declaration-builder";
+import { ensureAbsolutePath } from "./utilities/ensure-absolute-path";
 import { isParsable } from "./utilities/is-parsable";
 
 export type NodePackScriptTarget =
@@ -67,46 +68,57 @@ export type BuildConfig = {
 };
 
 export async function build(config: BuildConfig) {
-  console.log("Building...");
+  try {
+    console.log("Building...");
 
-  if (config.declarations !== "only") {
-    const builder = new Builder(config.srcDir, config.outDir);
+    ensureAbsolutePath(config.srcDir);
+    ensureAbsolutePath(config.outDir);
+    if (config.tsConfig) {
+      ensureAbsolutePath(config.tsConfig);
+    }
 
-    builder.setFormats(config.formats ?? []);
-    builder.target = config.target;
-    builder.tsConfig = config.tsConfig;
-    builder.additionalESbuildOptions = config.esbuildOptions;
+    if (config.declarations !== "only") {
+      const builder = new Builder(config.srcDir, config.outDir);
 
-    for await (const [root, _, files] of walk(config.srcDir)) {
+      builder.setFormats(config.formats ?? []);
+      builder.target = config.target;
+      builder.tsConfig = config.tsConfig;
+      builder.additionalESbuildOptions = config.esbuildOptions;
+
       const buildOpList: Promise<any>[] = [];
-      for (const file of files) {
-        const filePath = path.join(root, file.name);
+      for await (const [root, _, files] of walk(config.srcDir)) {
+        for (const file of files) {
+          const filePath = path.join(root, file.name);
 
-        if (isParsable(filePath, config.exclude ?? [])) {
-          const buildOp = builder.build(filePath);
-          buildOpList.push(buildOp);
+          if (isParsable(filePath, config.exclude ?? [])) {
+            const buildOp = builder.build(filePath);
+            buildOpList.push(buildOp);
+          }
         }
       }
       await Promise.all(buildOpList);
     }
-  }
 
-  if (config.declarations === true || config.declarations === "only") {
-    const declarationBuilder = new DeclarationBuilder(
-      config.srcDir,
-      config.outDir
-    );
+    if (config.declarations === true || config.declarations === "only") {
+      const declarationBuilder = new DeclarationBuilder(
+        config.srcDir,
+        config.outDir
+      );
 
-    if (config.target) {
-      declarationBuilder.setTarget(config.target);
+      if (config.target) {
+        declarationBuilder.setTarget(config.target);
+      }
+
+      if (config.tsConfig) {
+        declarationBuilder.setTsConfig(config.tsConfig);
+      }
+
+      await declarationBuilder.build();
     }
 
-    if (config.tsConfig) {
-      declarationBuilder.setTsConfig(config.tsConfig);
-    }
-
-    await declarationBuilder.build();
+    console.log("Build complete successfully.");
+  } catch (error) {
+    console.error(error);
+    process.exit(1);
   }
-
-  console.log("Build complete successfully.");
 }
