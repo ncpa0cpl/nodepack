@@ -7,4 +7,5 @@ build({
   outDir: path.resolve(__dirname, "../dist"),
   formats: ["cjs", "esm", "legacy"],
   tsConfig: path.resolve(__dirname, "../tsconfig.json"),
+  declarations: true,
 });
