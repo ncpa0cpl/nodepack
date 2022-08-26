@@ -3,6 +3,7 @@ import path from "path";
 import type { BuildConfig, NodePackScriptTarget } from ".";
 import { changeExt } from "./utilities/change-ext";
 import { ESbuildAddImportExtensionsPlugin } from "./utilities/esbuild-add-import-extensions-plugin";
+import { ExtensionMapper } from "./utilities/extension-mapper";
 
 export class Builder {
   cjsBuildDir: string;
@@ -15,6 +16,7 @@ export class Builder {
   target: NodePackScriptTarget = "es6";
   tsConfig: string | undefined;
   additionalESbuildOptions: esbuild.BuildOptions | undefined;
+  extMapper = new ExtensionMapper({}, ".js");
 
   constructor(public srcDir: string, outDir: string) {
     this.cjsBuildDir = path.resolve(outDir, "cjs");
@@ -34,6 +36,8 @@ export class Builder {
     const relativePath = path.relative(this.srcDir, filePath);
     const outFilePath = path.join(outDir, relativePath);
 
+    const extMapper = this.extMapper.withFormat(ext);
+
     return esbuild.build({
       ...additionalOptions,
       entryPoints: [filePath],
@@ -42,11 +46,16 @@ export class Builder {
       tsconfig: this.tsConfig,
       bundle: true,
       format,
-      plugins: [ESbuildAddImportExtensionsPlugin(ext), ...additionalPlugins],
-      outExtension: {
-        ".js": ext,
-      },
+      plugins: [
+        ESbuildAddImportExtensionsPlugin(extMapper),
+        ...additionalPlugins,
+      ],
+      outExtension: { ".js": ext },
     });
+  }
+
+  setOutExtensions(outExtensions: { [ext: string]: string }) {
+    this.extMapper = new ExtensionMapper(outExtensions);
   }
 
   setFormats(formats: Required<BuildConfig>["formats"]) {

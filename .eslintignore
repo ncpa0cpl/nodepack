@@ -1,7 +1,7 @@
 node_modules
 dist
 .vscode
-tests
+test
 __tests__
 __mocks__
 coverage

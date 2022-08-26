@@ -2,5 +2,10 @@ import path from "path";
 
 export const changeExt = (file: string, ext: string) => {
   const p = path.parse(file);
-  return path.join(p.dir, p.name + ext);
+  const result = path.join(p.dir, p.name + ext);
+
+  if (file.startsWith("./")) {
+    return `./${result}`;
+  }
+  return result;
 };

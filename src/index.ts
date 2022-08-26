@@ -4,6 +4,7 @@ import path from "path";
 import { Builder } from "./builder";
 import { DeclarationBuilder } from "./declaration-builder";
 import { ensureAbsolutePath } from "./utilities/ensure-absolute-path";
+import { ExcludeFacade } from "./utilities/exclude-facade";
 import { isParsable } from "./utilities/is-parsable";
 
 export type NodePackScriptTarget =
@@ -54,6 +55,11 @@ export type BuildConfig = {
    * must be installed.
    */
   declarations?: boolean | "only";
+  /**
+   * Allows to customize the file extension of the generated
+   * files.
+   */
+  extMapping?: Record<string, `.${string}` | "<format>">;
   /** Options to pass to the `esbuild` compiler. */
   esbuildOptions?: Omit<
     esbuild.BuildOptions,
@@ -77,6 +83,8 @@ export async function build(config: BuildConfig) {
       ensureAbsolutePath(config.tsConfig);
     }
 
+    const exclude = new ExcludeFacade(config.exclude ?? []);
+
     if (config.declarations !== "only") {
       const builder = new Builder(config.srcDir, config.outDir);
 
@@ -85,12 +93,18 @@ export async function build(config: BuildConfig) {
       builder.tsConfig = config.tsConfig;
       builder.additionalESbuildOptions = config.esbuildOptions;
 
+      if (config.extMapping) builder.setOutExtensions(config.extMapping);
+
       const buildOpList: Promise<any>[] = [];
       for await (const [root, _, files] of walk(config.srcDir)) {
         for (const file of files) {
           const filePath = path.join(root, file.name);
 
-          if (isParsable(filePath, config.exclude ?? [])) {
+          if (
+            exclude.isNotExcluded(filePath) &&
+            (isParsable(filePath) ||
+              builder.extMapper.hasMapping(path.extname(filePath)))
+          ) {
             const buildOp = builder.build(filePath);
             buildOpList.push(buildOp);
           }

@@ -1,4 +1,4 @@
-export const PARSABLE_EXTENSIONS = [
+export const JS_EXTENSIONS = [
   ".ts",
   ".js",
   ".cjs",
@@ -7,4 +7,11 @@ export const PARSABLE_EXTENSIONS = [
   ".cts",
   ".tsx",
   ".jsx",
+];
+
+export const ESBUILD_SUPPORTED_EXTENSIONS = [".json", ".txt", ".data"];
+
+export const PARSABLE_EXTENSIONS = [
+  ...JS_EXTENSIONS,
+  ...ESBUILD_SUPPORTED_EXTENSIONS,
 ];

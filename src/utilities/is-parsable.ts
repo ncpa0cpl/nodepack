@@ -1,18 +1,9 @@
 import path from "path";
-import type { BuildConfig } from "..";
 import { PARSABLE_EXTENSIONS } from "./parsable-extensions";
 
-export const isParsable = (
-  filePath: string,
-  exclude: Required<BuildConfig>["exclude"]
-): boolean => {
-  const excludePatterns = Array.isArray(exclude) ? exclude : [exclude];
-
-  if (!PARSABLE_EXTENSIONS.includes(path.extname(filePath))) return false;
-
-  for (const excludePattern of excludePatterns) {
-    if (excludePattern.test(filePath)) return false;
-  }
+export const isParsable = (filePath: string): boolean => {
+  if (!PARSABLE_EXTENSIONS.includes(path.extname(filePath).toLowerCase()))
+    return false;
 
   return true;
 };
