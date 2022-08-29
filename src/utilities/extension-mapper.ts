@@ -28,7 +28,7 @@ export class ExtensionMapper {
   map(ext: string): string {
     const mappedExt = this.extMap[ext] ?? ext;
 
-    if (mappedExt === "<format>") {
+    if (mappedExt === "%FORMAT%") {
       return this.format ?? ext;
     }
 

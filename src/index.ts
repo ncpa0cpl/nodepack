@@ -61,7 +61,7 @@ export type BuildConfig = {
    * Allows to customize the file extension of the generated
    * files.
    */
-  extMapping?: Record<`.${string}`, `.${string}` | "<format>">;
+  extMapping?: Record<`.${string}`, `.${string}` | "%FORMAT%">;
   /**
    * A map of path aliases.
    *

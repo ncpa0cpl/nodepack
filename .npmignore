@@ -6,6 +6,7 @@ __tests__
 coverage
 src
 scripts
+test
 .eslintignore
 .eslintrc.json
 .gitignore
