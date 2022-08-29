@@ -129,7 +129,7 @@ If you want to map given extension to the used format (`.cjs`, `.mjs` or `.js`),
 
 ##### Example
 
-To map all `.png` files to the javascript extension depending which format it belongs to:
+To map all `.png` files to the javascript extension depending on which format it is generated for:
 
 ```ts
 import { build } from "@ncpa0cpl/nodepack";
