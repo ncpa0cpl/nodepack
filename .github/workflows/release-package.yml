@@ -1,5 +1,8 @@
 name: Release Package
 
+permissions:
+  repository-projects: write
+
 on:
   release:
     types: [created]
@@ -12,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: master
+          token: ${{secrets.GITHUB_TOKEN}}
       - uses: actions/setup-node@v3
         with:
           node-version: 12
