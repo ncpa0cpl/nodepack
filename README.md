@@ -50,7 +50,7 @@ build({
 
 Then for node environments to correctly resolve the build files depending on the environment include the following in your `package.json` file:
 
-```json
+```js
 {
   // main entrypoint for legacy environments that do not support the `exports` field
   "main": "./dist/legacy/index.js",
