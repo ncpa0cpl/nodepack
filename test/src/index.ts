@@ -1,3 +1,4 @@
+import { test as T } from "@Root/common/test";
 import data from "./base64.data";
 import file from "./file.json";
 import "./styles.css";
@@ -9,5 +10,6 @@ export {
   text,
   data,
   test,
+  T,
   //
 };

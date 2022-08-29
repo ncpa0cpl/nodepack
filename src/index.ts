@@ -3,9 +3,11 @@ import { walk } from "node-os-walk";
 import path from "path";
 import { Builder } from "./builder";
 import { DeclarationBuilder } from "./declaration-builder";
+import { DeclarationPathRewriter } from "./declaration-path-rewriter";
 import { ensureAbsolutePath } from "./utilities/ensure-absolute-path";
 import { ExcludeFacade } from "./utilities/exclude-facade";
 import { isParsable } from "./utilities/is-parsable";
+import { PathAliasResolver } from "./utilities/path-alias-resolver";
 
 export type NodePackScriptTarget =
   | "es2022"
@@ -59,7 +61,23 @@ export type BuildConfig = {
    * Allows to customize the file extension of the generated
    * files.
    */
-  extMapping?: Record<string, `.${string}` | "<format>">;
+  extMapping?: Record<`.${string}`, `.${string}` | "<format>">;
+  /**
+   * A map of path aliases.
+   *
+   * Each path alias must end with a `/*`, and each alias value
+   * must be a path relative to the `srcDir`, start with a `./`
+   * and end with a `/*`.
+   *
+   * @example
+   *   build({
+   *     // ...
+   *     pathAliases: {
+   *       "@Utils/*": "./Utils/*",
+   *     },
+   *   });
+   */
+  pathAliases?: Record<`${string}/*`, `./${string}/*` | "./*">;
   /** Options to pass to the `esbuild` compiler. */
   esbuildOptions?: Omit<
     esbuild.BuildOptions,
@@ -83,15 +101,19 @@ export async function build(config: BuildConfig) {
       ensureAbsolutePath(config.tsConfig);
     }
 
+    const pathAliases = new PathAliasResolver(config.pathAliases);
     const exclude = new ExcludeFacade(config.exclude ?? []);
 
     if (config.declarations !== "only") {
+      console.log("Building JavaScript files.");
+
       const builder = new Builder(config.srcDir, config.outDir);
 
       builder.setFormats(config.formats ?? []);
       builder.target = config.target;
       builder.tsConfig = config.tsConfig;
       builder.additionalESbuildOptions = config.esbuildOptions;
+      builder.pathAliases = pathAliases;
 
       if (config.extMapping) builder.setOutExtensions(config.extMapping);
 
@@ -114,6 +136,8 @@ export async function build(config: BuildConfig) {
     }
 
     if (config.declarations === true || config.declarations === "only") {
+      console.log("Creating declaration files.");
+
       const declarationBuilder = new DeclarationBuilder(
         config.srcDir,
         config.outDir
@@ -128,9 +152,18 @@ export async function build(config: BuildConfig) {
       }
 
       await declarationBuilder.build();
+
+      if (config.pathAliases) {
+        const declarationPathRewriter = new DeclarationPathRewriter(
+          declarationBuilder.outDir,
+          pathAliases
+        );
+
+        declarationPathRewriter.rewrite();
+      }
     }
 
-    console.log("Build complete successfully.");
+    console.log("Build completed successfully.");
   } catch (error) {
     console.error(error);
     process.exit(1);

@@ -14,4 +14,7 @@ build({
   extMapping: {
     ".custom": "<format>",
   },
+  pathAliases: {
+    "@Root/*": "./*",
+  },
 });

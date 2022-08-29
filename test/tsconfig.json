@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "es6",
     "module": "NodeNext",
+    "baseUrl": ".",
     "jsx": "react",
     "declaration": true,
     "outDir": "./dist",
@@ -14,7 +15,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "@Root/*": ["./src/*"]
+    }
   },
   "include": ["src/**/*"]
 }

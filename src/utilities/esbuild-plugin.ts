@@ -2,29 +2,46 @@ import type esbuild from "esbuild";
 import type { Stats } from "fs";
 import fs from "fs/promises";
 import path from "path";
+import { asRelative } from "./as-relative";
 import { changeExt } from "./change-ext";
 import type { ExtensionMapper } from "./extension-mapper";
+import type { PathAliasResolver } from "./path-alias-resolver";
 
-export const ESbuildAddImportExtensionsPlugin = (
-  extMapper: ExtensionMapper
+export const ESbuildPlugin = (
+  extMapper: ExtensionMapper,
+  srcDir: string,
+  pathAliases: PathAliasResolver
 ) => ({
-  name: "nodepack-esbuild-add-import-extensions-plugin",
+  name: "nodepack-esbuild-plugin",
   setup(build: esbuild.PluginBuild) {
     build.onResolve({ filter: /.*/ }, async (args) => {
       if (args.importer) {
-        const importExt = path.extname(args.path).toLowerCase();
-        if (args.path.startsWith(".")) {
+        let importPath = args.path;
+
+        if (pathAliases.isAlias(args.path)) {
+          const absImportPath = path.resolve(
+            srcDir,
+            pathAliases.replaceAliasPattern(args.path)
+          );
+
+          importPath = asRelative(
+            path.relative(args.resolveDir, absImportPath)
+          );
+        }
+
+        const importExt = path.extname(importPath).toLowerCase();
+        if (importPath.startsWith(".")) {
           if (importExt === "") {
             let stat: Stats | undefined = undefined;
 
             try {
-              stat = await fs.stat(path.resolve(args.resolveDir, args.path));
+              stat = await fs.stat(path.resolve(args.resolveDir, importPath));
             } catch (e) {
               //
             }
 
             if (stat?.isDirectory()) {
-              let p = args.path;
+              let p = importPath;
               if (p.endsWith("/")) {
                 p = p.slice(0, -1);
               }
@@ -34,12 +51,12 @@ export const ESbuildAddImportExtensionsPlugin = (
               };
             } else
               return {
-                path: `${args.path}${extMapper.map(".js")}`,
+                path: `${importPath}${extMapper.map(".js")}`,
                 external: true,
               };
           } else if (extMapper.hasMapping(importExt)) {
             return {
-              path: changeExt(args.path, extMapper.map(importExt)),
+              path: changeExt(importPath, extMapper.map(importExt)),
               external: true,
             };
           }

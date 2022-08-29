@@ -2,8 +2,9 @@ import esbuild from "esbuild";
 import path from "path";
 import type { BuildConfig, NodePackScriptTarget } from ".";
 import { changeExt } from "./utilities/change-ext";
-import { ESbuildAddImportExtensionsPlugin } from "./utilities/esbuild-add-import-extensions-plugin";
+import { ESbuildPlugin } from "./utilities/esbuild-plugin";
 import { ExtensionMapper } from "./utilities/extension-mapper";
+import { PathAliasResolver } from "./utilities/path-alias-resolver";
 
 export class Builder {
   cjsBuildDir: string;
@@ -17,6 +18,7 @@ export class Builder {
   tsConfig: string | undefined;
   additionalESbuildOptions: esbuild.BuildOptions | undefined;
   extMapper = new ExtensionMapper({}, ".js");
+  pathAliases = new PathAliasResolver();
 
   constructor(public srcDir: string, outDir: string) {
     this.cjsBuildDir = path.resolve(outDir, "cjs");
@@ -47,7 +49,7 @@ export class Builder {
       bundle: true,
       format,
       plugins: [
-        ESbuildAddImportExtensionsPlugin(extMapper),
+        ESbuildPlugin(extMapper, this.srcDir, this.pathAliases),
         ...additionalPlugins,
       ],
       outExtension: { ".js": ext },
