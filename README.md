@@ -32,6 +32,12 @@
 
 ## Usage
 
+> **Important**
+>
+> Make sure to explicitly set all type exports/imports as a type exports/imports in your project files. (use eslint rules to enforce this rule: [for exports](https://github.com/typescript-eslint/typescript-eslint/blob/main/packages/eslint-plugin/docs/rules/consistent-type-exports.md) and [for imports](https://github.com/typescript-eslint/typescript-eslint/blob/main/packages/eslint-plugin/docs/rules/consistent-type-imports.md))
+>
+> All exports and imports of TS types that are not marked as such will be left over in the compiled JS files, which will lead to runtime errors.
+
 Execute this JavaScript script to build the files for the selected formats:
 
 ```ts

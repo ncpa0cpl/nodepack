@@ -3170,10 +3170,10 @@ node-int64@^0.4.0:
   resolved "https://registry.yarnpkg.com/node-int64/-/node-int64-0.4.0.tgz#87a9065cdb355d3182d8f94ce11188b825c68a3b"
   integrity sha512-O5lz91xSOeoXP6DulyHfllpq+Eg00MWitZIbtPfoSEvqIHdl5gfcY6hYzDWnj0qD5tz52PI08u9qUvSVeUBeHw==
 
-node-os-walk@>=1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/node-os-walk/-/node-os-walk-1.0.1.tgz#0701faf3a19a8bb48f222723098bfdcadbd0c40c"
-  integrity sha512-qevYsiS6swb9m+7KiEYJhs858+mNITA8FLHkcTfXkaDsewm45zQvkFkEwSzt59WTEjTksDcKzAXQ1Gg2S7hRAA==
+node-os-walk@>=1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/node-os-walk/-/node-os-walk-1.0.2.tgz#82011408577437856451398f14cfe7fd0982902f"
+  integrity sha512-aJOH1sKNP2vdYZwLyaSqPouM5Bg5YnNd0t/8cdLz2mjxDGxZyqFpa7vTsbhfjUdJM3ZBwiLPwu84kl2tET8T+Q==
 
 node-os-walk@^1.0.0:
   version "1.0.0"
