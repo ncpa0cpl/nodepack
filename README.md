@@ -11,28 +11,24 @@
 
 ## Installation
 
-1. Create a `.npmrc` file in your project if it doesn't exists already.
-2. Add the following lines to it:
-   ```npmrc
-   //npm.pkg.github.com/:_authToken=${GITHUB_PERSONAL_TOKEN}
-   @ncpa0cpl:registry=https://npm.pkg.github.com
-   ```
-3. Generate a Personal Access Token to your GitHub Account with a package read permission enabled.
-4. Set the `GITHUB_PERSONAL_TOKEN` environmental variable on you local machine to the generated token.
-5. Run the installation:
+1. Intall this package and `esbuild` using _yarn_ or _npm_:
+
    ```sh
-   npm i esbuild @ncpa0cpl/nodepack
+     npm i -D esbuild @ncpa0cpl/nodepack
    ```
+
    or
+
    ```sh
-   yarn add esbuild @ncpa0cpl/nodepack
+     yarn add -D esbuild @ncpa0cpl/nodepack
    ```
-6. (Optional) If you want to be able to generate TypeScript declarations also install `typescript`.
-7. (Optional) If you want to be able to generate TypeScript declarations for JSON files also install `json-to-ts` package.
+
+2. (Optional) If you want to be able to generate TypeScript declarations also install `typescript`.
+3. (Optional) If you want to be able to generate TypeScript declarations for JSON files also install `json-to-ts` package.
 
 ## Usage
 
-> **Important**
+> **<span style="color:red">Important</span>**
 >
 > Make sure to explicitly set all type exports/imports as a type exports/imports in your project files. (use eslint rules to enforce this rule: [for exports](https://github.com/typescript-eslint/typescript-eslint/blob/main/packages/eslint-plugin/docs/rules/consistent-type-exports.md) and [for imports](https://github.com/typescript-eslint/typescript-eslint/blob/main/packages/eslint-plugin/docs/rules/consistent-type-imports.md))
 >

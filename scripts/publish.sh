@@ -14,5 +14,5 @@ if [ "$issemver" -eq "1" ]; then
         git push --no-verify
     fi
     echo "Publishing to npm"
-    npm publish
+    npm publish --access public
 fi

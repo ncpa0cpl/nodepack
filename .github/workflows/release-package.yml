@@ -7,6 +7,9 @@ on:
   release:
     types: [created]
 
+env:
+  NPM_TOKEN: ""
+
 jobs:
   build-and-publish:
     permissions:
@@ -27,12 +30,8 @@ jobs:
       - uses: borales/actions-yarn@v3.0.0
         with:
           cmd: build
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 12
-          registry-url: https://npm.pkg.github.com/
       - name: Publish
         env:
-          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          NPM_TOKEN: ${{ secrets.NPM_AUTOMATION_TOKEN }}
           TAG_NAME: ${{github.event.release.tag_name}}
         run: ./scripts/publish.sh

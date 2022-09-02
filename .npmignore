@@ -14,3 +14,4 @@ test
 jest.config.js
 yarn-error.log
 git-hook-tasks.config.json
+yarn-error.log
