@@ -8,11 +8,12 @@ build({
   formats: ["cjs", "esm", "legacy"],
   declarations: true,
   tsConfig: path.resolve(__dirname, "tsconfig.json"),
+  decoratorsMetadata: true,
   esbuildOptions: {
     loader: { ".data": "base64", ".custom": "json" },
   },
   extMapping: {
-    ".custom": "<format>",
+    ".custom": "%FORMAT%",
   },
   pathAliases: {
     "@Root/*": "./*",

@@ -1,6 +1,6 @@
 import esbuild from "esbuild";
 import path from "path";
-import type { BuildConfig, NodePackScriptTarget } from ".";
+import type { NodePackScriptTarget } from ".";
 import { changeExt } from "./utilities/change-ext";
 import { ESbuildPlugin } from "./utilities/esbuild-plugin";
 import { ExtensionMapper } from "./utilities/extension-mapper";
@@ -11,14 +11,12 @@ export class Builder {
   esmBuildDir: string;
   legacyBuildDir: string;
 
-  isCjs = false;
-  isEsm = false;
-  isLegacy = false;
   target: NodePackScriptTarget = "es6";
   tsConfig: string | undefined;
   additionalESbuildOptions: esbuild.BuildOptions | undefined;
   extMapper = new ExtensionMapper({}, ".js");
   pathAliases = new PathAliasResolver();
+  decoratorsMetadata = false;
 
   constructor(public srcDir: string, outDir: string) {
     this.cjsBuildDir = path.resolve(outDir, "cjs");
@@ -40,7 +38,7 @@ export class Builder {
 
     const extMapper = this.extMapper.withFormat(ext);
 
-    return esbuild.build({
+    const r = await esbuild.build({
       ...additionalOptions,
       entryPoints: [filePath],
       outfile: changeExt(outFilePath, ext),
@@ -49,38 +47,36 @@ export class Builder {
       bundle: true,
       format,
       plugins: [
-        ESbuildPlugin(extMapper, this.srcDir, this.pathAliases),
         ...additionalPlugins,
+        ESbuildPlugin({
+          extMapper,
+          srcDir: this.srcDir,
+          pathAliases: this.pathAliases,
+          decoratorsMetadata: this.decoratorsMetadata,
+          tsConfig: this.tsConfig,
+        }),
       ],
       outExtension: { ".js": ext },
     });
+
+    return r;
   }
 
   setOutExtensions(outExtensions: { [ext: string]: string }) {
     this.extMapper = new ExtensionMapper(outExtensions);
   }
 
-  setFormats(formats: Required<BuildConfig>["formats"]) {
-    this.isCjs = formats.includes("commonjs") || formats.includes("cjs");
-    this.isEsm = formats.includes("esmodules") || formats.includes("esm");
-    this.isLegacy = formats.includes("legacy");
-  }
-
-  async build(filePath: string) {
-    const ops: Promise<any>[] = [];
-
-    if (this.isCjs) {
-      ops.push(this.buildFile(filePath, this.cjsBuildDir, "cjs", ".cjs"));
+  async build(filePath: string, format: "cjs" | "esm" | "legacy") {
+    if (format === "cjs") {
+      return this.buildFile(filePath, this.cjsBuildDir, "cjs", ".cjs");
     }
 
-    if (this.isEsm) {
-      ops.push(this.buildFile(filePath, this.esmBuildDir, "esm", ".mjs"));
+    if (format === "esm") {
+      return this.buildFile(filePath, this.esmBuildDir, "esm", ".mjs");
     }
 
-    if (this.isLegacy) {
-      ops.push(this.buildFile(filePath, this.legacyBuildDir, "cjs", ".js"));
+    if (format === "legacy") {
+      return this.buildFile(filePath, this.legacyBuildDir, "cjs", ".js");
     }
-
-    return Promise.all(ops);
   }
 }
