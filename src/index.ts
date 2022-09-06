@@ -1,5 +1,6 @@
 import type esbuild from "esbuild";
 import { walk } from "node-os-walk";
+import process from "node:process";
 import path from "path";
 import { Builder } from "./builder";
 import { DeclarationBuilder } from "./declaration-builder";
@@ -9,6 +10,7 @@ import { ExcludeFacade } from "./utilities/exclude-facade";
 import { FormatsFacade } from "./utilities/formats-facade";
 import { isParsable } from "./utilities/is-parsable";
 import { PathAliasResolver } from "./utilities/path-alias-resolver";
+import { TsWorkerPool } from "./workers";
 
 export type NodePackScriptTarget =
   | "es2022"
@@ -199,5 +201,7 @@ export async function build(config: BuildConfig) {
   } catch (error) {
     console.error(error);
     process.exit(1);
+  } finally {
+    TsWorkerPool.close();
   }
 }
