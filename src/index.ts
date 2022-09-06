@@ -6,6 +6,7 @@ import { DeclarationBuilder } from "./declaration-builder";
 import { DeclarationPathRewriter } from "./declaration-path-rewriter";
 import { ensureAbsolutePath } from "./utilities/ensure-absolute-path";
 import { ExcludeFacade } from "./utilities/exclude-facade";
+import { FormatsFacade } from "./utilities/formats-facade";
 import { isParsable } from "./utilities/is-parsable";
 import { PathAliasResolver } from "./utilities/path-alias-resolver";
 
@@ -78,6 +79,7 @@ export type BuildConfig = {
    *   });
    */
   pathAliases?: Record<`${string}/*`, `./${string}/*` | "./*">;
+  decoratorsMetadata?: boolean;
   /** Options to pass to the `esbuild` compiler. */
   esbuildOptions?: Omit<
     esbuild.BuildOptions,
@@ -90,6 +92,83 @@ export type BuildConfig = {
     | "outExtension"
   >;
 };
+
+async function buildJs(
+  config: BuildConfig,
+  pathAliases: PathAliasResolver,
+  exclude: ExcludeFacade
+) {
+  const formats = new FormatsFacade(config.formats);
+
+  const builder = new Builder(config.srcDir, config.outDir);
+
+  builder.target = config.target;
+  builder.tsConfig = config.tsConfig;
+  builder.additionalESbuildOptions = config.esbuildOptions;
+  builder.pathAliases = pathAliases;
+  builder.decoratorsMetadata = !!config.decoratorsMetadata;
+
+  if (config.extMapping) builder.setOutExtensions(config.extMapping);
+
+  const filesForCompilation: string[] = [];
+  for await (const [root, _, files] of walk(config.srcDir)) {
+    for (const file of files) {
+      const filePath = path.join(root, file.name);
+
+      if (
+        exclude.isNotExcluded(filePath) &&
+        (isParsable(filePath) ||
+          builder.extMapper.hasMapping(path.extname(filePath)))
+      ) {
+        filesForCompilation.push(filePath);
+      }
+    }
+  }
+
+  if (formats.isCjs)
+    await Promise.all(
+      filesForCompilation.map((file) => builder.build(file, "cjs"))
+    );
+
+  if (formats.isEsm)
+    await Promise.all(
+      filesForCompilation.map((file) => builder.build(file, "esm"))
+    );
+
+  if (formats.isLegacy)
+    await Promise.all(
+      filesForCompilation.map((file) => builder.build(file, "legacy"))
+    );
+}
+
+async function buildDeclarations(
+  config: BuildConfig,
+  pathAliases: PathAliasResolver
+) {
+  const declarationBuilder = new DeclarationBuilder(
+    config.srcDir,
+    config.outDir
+  );
+
+  if (config.target) {
+    declarationBuilder.setTarget(config.target);
+  }
+
+  if (config.tsConfig) {
+    declarationBuilder.setTsConfig(config.tsConfig);
+  }
+
+  await declarationBuilder.build();
+
+  if (config.pathAliases) {
+    const declarationPathRewriter = new DeclarationPathRewriter(
+      declarationBuilder.outDir,
+      pathAliases
+    );
+
+    declarationPathRewriter.rewrite();
+  }
+}
 
 export async function build(config: BuildConfig) {
   try {
@@ -104,64 +183,17 @@ export async function build(config: BuildConfig) {
     const pathAliases = new PathAliasResolver(config.pathAliases);
     const exclude = new ExcludeFacade(config.exclude ?? []);
 
+    const ops: Promise<void>[] = [];
+
     if (config.declarations !== "only") {
-      console.log("Building JavaScript files.");
-
-      const builder = new Builder(config.srcDir, config.outDir);
-
-      builder.setFormats(config.formats ?? []);
-      builder.target = config.target;
-      builder.tsConfig = config.tsConfig;
-      builder.additionalESbuildOptions = config.esbuildOptions;
-      builder.pathAliases = pathAliases;
-
-      if (config.extMapping) builder.setOutExtensions(config.extMapping);
-
-      const buildOpList: Promise<any>[] = [];
-      for await (const [root, _, files] of walk(config.srcDir)) {
-        for (const file of files) {
-          const filePath = path.join(root, file.name);
-
-          if (
-            exclude.isNotExcluded(filePath) &&
-            (isParsable(filePath) ||
-              builder.extMapper.hasMapping(path.extname(filePath)))
-          ) {
-            const buildOp = builder.build(filePath);
-            buildOpList.push(buildOp);
-          }
-        }
-      }
-      await Promise.all(buildOpList);
+      ops.push(buildJs(config, pathAliases, exclude));
     }
 
     if (config.declarations === true || config.declarations === "only") {
-      console.log("Creating declaration files.");
-
-      const declarationBuilder = new DeclarationBuilder(
-        config.srcDir,
-        config.outDir
-      );
-
-      if (config.target) {
-        declarationBuilder.setTarget(config.target);
-      }
-
-      if (config.tsConfig) {
-        declarationBuilder.setTsConfig(config.tsConfig);
-      }
-
-      await declarationBuilder.build();
-
-      if (config.pathAliases) {
-        const declarationPathRewriter = new DeclarationPathRewriter(
-          declarationBuilder.outDir,
-          pathAliases
-        );
-
-        declarationPathRewriter.rewrite();
-      }
+      ops.push(buildDeclarations(config, pathAliases));
     }
+
+    await Promise.all(ops);
 
     console.log("Build completed successfully.");
   } catch (error) {
