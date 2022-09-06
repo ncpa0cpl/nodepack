@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "@ncpa0cpl/nodepack": "^1.2.4",
     "@swc-node/register": "^1.5.1",
     "@swc/core": "^1.2.242",
     "@swc/jest": "^0.2.22",
@@ -39,8 +40,9 @@
     "test:lint": "eslint .",
     "test:prettier": "prettier -c ./src",
     "test:tsc": "tsc --noEmit",
-    "build": "ts-node -P ./tsconfig.build.json ./scripts/build.ts",
-    "test:build": "ts-node -P ./tsconfig.build.json ./test/build.ts"
+    "build": "rm -rf ./dist && node ./scripts/build.cjs",
+    "test:build:cjs": "rm -rf ./test/dist && node ./test/build.cjs",
+    "test:build:mjs": "rm -rf ./test/dist && node ./test/build.mjs"
   },
   "keywords": [
     "esbuild",
@@ -62,7 +64,8 @@
   },
   "dependencies": {
     "@ts-morph/bootstrap": "^0.16.0",
-    "node-os-walk": ">=1.0.2"
+    "node-os-walk": ">=1.0.2",
+    "node-worker-bridge": "ncpa0cpl/node-worker-bridge"
   },
   "peerDependencies": {
     "esbuild": "^0.15.5"

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "es2020",
     "module": "NodeNext",
     "baseUrl": ".",
     "jsx": "react",
@@ -22,5 +22,5 @@
       "@Root/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "build.mjs"]
 }

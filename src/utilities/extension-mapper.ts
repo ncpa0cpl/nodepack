@@ -8,7 +8,6 @@ export class ExtensionMapper {
     const option = { ...extMap };
 
     if (this.format) {
-      option[".js"] = this.format;
       option[".json"] = this.format;
       option[".txt"] = this.format;
       option[".data"] = this.format;
@@ -19,6 +18,10 @@ export class ExtensionMapper {
 
   withFormat(format: string): ExtensionMapper {
     return new ExtensionMapper(this.extMap, format);
+  }
+
+  getDefault() {
+    return this.format ?? ".js";
   }
 
   hasMapping(ext: string): boolean {

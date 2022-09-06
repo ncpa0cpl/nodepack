@@ -1,9 +1,8 @@
-import type { Project } from "@ts-morph/bootstrap";
-import { createProjectSync, ts } from "@ts-morph/bootstrap";
 import type esbuild from "esbuild";
 import type { Stats } from "fs";
 import fs from "fs/promises";
 import path from "path";
+import { TsWorkerPool } from "../workers";
 import { asRelative } from "./as-relative";
 import { changeExt } from "./change-ext";
 import type { ExtensionMapper } from "./extension-mapper";
@@ -16,8 +15,6 @@ const filesCache = new CacheMap<{
   transpiledFile?: Promise<string>;
 }>();
 
-let project: Project;
-
 export const ESbuildPlugin = (params: {
   extMapper: ExtensionMapper;
   srcDir: string;
@@ -27,22 +24,6 @@ export const ESbuildPlugin = (params: {
 }) => {
   const { extMapper, pathAliases, srcDir, decoratorsMetadata, tsConfig } =
     params;
-
-  if (!project)
-    project = createProjectSync({
-      tsConfigFilePath: tsConfig,
-      compilerOptions: {
-        target: ts.ScriptTarget.ESNext,
-        experimentalDecorators: true,
-        emitDecoratorMetadata: true,
-        sourceMap: false,
-        inlineSourceMap: true,
-        inlineSources: true,
-        module: ts.ModuleKind.ESNext,
-        moduleResolution: ts.ModuleResolutionKind.NodeJs,
-      },
-      skipAddingFilesFromTsConfig: true,
-    });
 
   return {
     name: "nodepack-esbuild-plugin",
@@ -79,12 +60,12 @@ export const ESbuildPlugin = (params: {
                   p = p.slice(0, -1);
                 }
                 return {
-                  path: `${p}/index${extMapper.map(".js")}`,
+                  path: `${p}/index${extMapper.getDefault()}`,
                   external: true,
                 };
               } else
                 return {
-                  path: `${importPath}${extMapper.map(".js")}`,
+                  path: `${importPath}${extMapper.getDefault()}`,
                   external: true,
                 };
             } else if (extMapper.hasMapping(importExt)) {
@@ -120,14 +101,10 @@ export const ESbuildPlugin = (params: {
           const needToTranspileWithTs = hasDecorators(fileContent);
 
           if (needToTranspileWithTs) {
-            const sourceFile = project.createSourceFile(args.path, fileContent);
-
-            const program = project.createProgram();
-
-            const transpiledFile = new Promise<string>((resolve) => {
-              program.emit(sourceFile, (_, f) => {
-                resolve(f);
-              });
+            const transpiledFile = TsWorkerPool.parseFile({
+              tsConfigPath: tsConfig,
+              filePath: args.path,
+              fileContent: fileContent,
             });
 
             filesCache.set(args.path, {

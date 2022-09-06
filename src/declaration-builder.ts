@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import type { ts } from "@ts-morph/bootstrap";
-import { createProject } from "@ts-morph/bootstrap";
 import fs from "fs/promises";
 import { walk } from "node-os-walk";
 import path from "path";
 import type { NodePackScriptTarget } from ".";
 import { isomorphicImport } from "./utilities/isomorphic-import";
 import { mapCompilerTarget } from "./utilities/map-compiler-target";
+import { TsWorkerPool } from "./workers";
 export class DeclarationBuilder {
   outDir: string;
   target?: NodePackScriptTarget;
@@ -93,20 +93,10 @@ export class DeclarationBuilder {
   }
 
   async build() {
-    const project = await createProject({
-      tsConfigFilePath: this.tsConfigPath,
+    await TsWorkerPool.emitDeclarations({
+      tsConfigPath: this.tsConfigPath,
       compilerOptions: this.resolveCompilerOptions(),
     });
-
-    const program = project.createProgram();
-
-    await program.emit(
-      undefined,
-      undefined,
-      undefined,
-      /* emitOnlyDtsFiles */ true
-    );
-
     await this.buildJsonDeclarations();
   }
 }

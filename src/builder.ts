@@ -38,10 +38,15 @@ export class Builder {
 
     const extMapper = this.extMapper.withFormat(ext);
 
+    const inputExt = path.extname(filePath);
+    const outExt = extMapper.hasMapping(inputExt)
+      ? extMapper.map(inputExt)
+      : ext;
+
     const r = await esbuild.build({
       ...additionalOptions,
       entryPoints: [filePath],
-      outfile: changeExt(outFilePath, ext),
+      outfile: changeExt(outFilePath, outExt),
       target: this.target,
       tsconfig: this.tsConfig,
       bundle: true,
@@ -56,7 +61,7 @@ export class Builder {
           tsConfig: this.tsConfig,
         }),
       ],
-      outExtension: { ".js": ext },
+      outExtension: { ".js": outExt },
     });
 
     return r;
