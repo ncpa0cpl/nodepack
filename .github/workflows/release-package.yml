@@ -14,16 +14,19 @@ jobs:
   build-and-publish:
     permissions:
       packages: write
-      contents: read
+      contents: write
+      pull-requests: write
+      issues: write
+      repository-projects: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           ref: master
-          token: ${{secrets.GITHUB_TOKEN}}
+          token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-node@v3
         with:
-          node-version: 12
+          node-version: 14
       - uses: borales/actions-yarn@v3.0.0
         with:
           cmd: install
@@ -33,5 +36,5 @@ jobs:
       - name: Publish
         env:
           NPM_TOKEN: ${{ secrets.NPM_AUTOMATION_TOKEN }}
-          TAG_NAME: ${{github.event.release.tag_name}}
+          TAG_NAME: ${{ github.event.release.tag_name }}
         run: ./scripts/publish.sh
