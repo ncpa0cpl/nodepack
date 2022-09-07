@@ -1,16 +1,6 @@
 import type esbuild from "esbuild";
-import { walk } from "node-os-walk";
-import process from "node:process";
-import path from "path";
-import { Builder } from "./builder";
-import { DeclarationBuilder } from "./declaration-builder";
-import { DeclarationPathRewriter } from "./declaration-path-rewriter";
+import { Program } from "./program";
 import { ensureAbsolutePath } from "./utilities/ensure-absolute-path";
-import { ExcludeFacade } from "./utilities/exclude-facade";
-import { FormatsFacade } from "./utilities/formats-facade";
-import { isParsable } from "./utilities/is-parsable";
-import { PathAliasResolver } from "./utilities/path-alias-resolver";
-import { TsWorkerPool } from "./workers";
 
 export type NodePackScriptTarget =
   | "es2022"
@@ -95,84 +85,9 @@ export type BuildConfig = {
   >;
 };
 
-async function buildJs(
-  config: BuildConfig,
-  pathAliases: PathAliasResolver,
-  exclude: ExcludeFacade
-) {
-  const formats = new FormatsFacade(config.formats);
-
-  const builder = new Builder(config.srcDir, config.outDir);
-
-  builder.target = config.target;
-  builder.tsConfig = config.tsConfig;
-  builder.additionalESbuildOptions = config.esbuildOptions;
-  builder.pathAliases = pathAliases;
-  builder.decoratorsMetadata = !!config.decoratorsMetadata;
-
-  if (config.extMapping) builder.setOutExtensions(config.extMapping);
-
-  const filesForCompilation: string[] = [];
-  for await (const [root, _, files] of walk(config.srcDir)) {
-    for (const file of files) {
-      const filePath = path.join(root, file.name);
-
-      if (
-        exclude.isNotExcluded(filePath) &&
-        (isParsable(filePath) ||
-          builder.extMapper.hasMapping(path.extname(filePath)))
-      ) {
-        filesForCompilation.push(filePath);
-      }
-    }
-  }
-
-  if (formats.isCjs)
-    await Promise.all(
-      filesForCompilation.map((file) => builder.build(file, "cjs"))
-    );
-
-  if (formats.isEsm)
-    await Promise.all(
-      filesForCompilation.map((file) => builder.build(file, "esm"))
-    );
-
-  if (formats.isLegacy)
-    await Promise.all(
-      filesForCompilation.map((file) => builder.build(file, "legacy"))
-    );
-}
-
-async function buildDeclarations(
-  config: BuildConfig,
-  pathAliases: PathAliasResolver
-) {
-  const declarationBuilder = new DeclarationBuilder(
-    config.srcDir,
-    config.outDir
-  );
-
-  if (config.target) {
-    declarationBuilder.setTarget(config.target);
-  }
-
-  if (config.tsConfig) {
-    declarationBuilder.setTsConfig(config.tsConfig);
-  }
-
-  await declarationBuilder.build();
-
-  if (config.pathAliases) {
-    const declarationPathRewriter = new DeclarationPathRewriter(
-      declarationBuilder.outDir,
-      pathAliases
-    );
-
-    declarationPathRewriter.rewrite();
-  }
-}
-
 export async function build(config: BuildConfig) {
+  let program: Program | undefined = undefined;
+
   try {
     console.log("Building...");
 
@@ -182,26 +97,22 @@ export async function build(config: BuildConfig) {
       ensureAbsolutePath(config.tsConfig);
     }
 
-    const pathAliases = new PathAliasResolver(config.pathAliases);
-    const exclude = new ExcludeFacade(config.exclude ?? []);
+    program = new Program(config);
 
     const ops: Promise<void>[] = [];
 
     if (config.declarations !== "only") {
-      ops.push(buildJs(config, pathAliases, exclude));
+      ops.push(program.transpileSource());
     }
 
     if (config.declarations === true || config.declarations === "only") {
-      ops.push(buildDeclarations(config, pathAliases));
+      ops.push(program.emitDeclarations());
     }
 
     await Promise.all(ops);
 
     console.log("Build completed successfully.");
-  } catch (error) {
-    console.error(error);
-    process.exit(1);
   } finally {
-    TsWorkerPool.close();
+    program?.close();
   }
 }

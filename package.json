@@ -63,6 +63,7 @@
     "email": "szymonb21@gmail.com"
   },
   "dependencies": {
+    "@ncpa0cpl/node-worker-bridge": "^0.0.3",
     "@ts-morph/bootstrap": "^0.16.0",
     "node-os-walk": ">=1.0.2",
     "node-worker-bridge": "ncpa0cpl/node-worker-bridge"

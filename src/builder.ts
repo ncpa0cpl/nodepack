@@ -1,24 +1,19 @@
 import esbuild from "esbuild";
 import path from "path";
-import type { NodePackScriptTarget } from ".";
+import type { ProgramContext } from "./program";
 import { changeExt } from "./utilities/change-ext";
 import { ESbuildPlugin } from "./utilities/esbuild-plugin";
-import { ExtensionMapper } from "./utilities/extension-mapper";
-import { PathAliasResolver } from "./utilities/path-alias-resolver";
 
 export class Builder {
-  cjsBuildDir: string;
-  esmBuildDir: string;
-  legacyBuildDir: string;
+  private cjsBuildDir: string;
+  private esmBuildDir: string;
+  private legacyBuildDir: string;
 
-  target: NodePackScriptTarget = "es6";
-  tsConfig: string | undefined;
-  additionalESbuildOptions: esbuild.BuildOptions | undefined;
-  extMapper = new ExtensionMapper({}, ".js");
-  pathAliases = new PathAliasResolver();
-  decoratorsMetadata = false;
-
-  constructor(public srcDir: string, outDir: string) {
+  constructor(
+    private program: ProgramContext,
+    private srcDir: string,
+    outDir: string
+  ) {
     this.cjsBuildDir = path.resolve(outDir, "cjs");
     this.esmBuildDir = path.resolve(outDir, "esm");
     this.legacyBuildDir = path.resolve(outDir, "legacy");
@@ -31,12 +26,12 @@ export class Builder {
     ext: string
   ) {
     const { plugins: additionalPlugins = [], ...additionalOptions } =
-      this.additionalESbuildOptions ?? {};
+      this.program.buildConfig.esbuildOptions ?? {};
 
     const relativePath = path.relative(this.srcDir, filePath);
     const outFilePath = path.join(outDir, relativePath);
 
-    const extMapper = this.extMapper.withFormat(ext);
+    const extMapper = this.program.extMap.withFormat(ext);
 
     const inputExt = path.extname(filePath);
     const outExt = extMapper.hasMapping(inputExt)
@@ -47,28 +42,18 @@ export class Builder {
       ...additionalOptions,
       entryPoints: [filePath],
       outfile: changeExt(outFilePath, outExt),
-      target: this.target,
-      tsconfig: this.tsConfig,
+      target: this.program.buildConfig.target,
+      tsconfig: this.program.buildConfig.tsConfig,
       bundle: true,
       format,
       plugins: [
         ...additionalPlugins,
-        ESbuildPlugin({
-          extMapper,
-          srcDir: this.srcDir,
-          pathAliases: this.pathAliases,
-          decoratorsMetadata: this.decoratorsMetadata,
-          tsConfig: this.tsConfig,
-        }),
+        ESbuildPlugin(this.program, extMapper, this.srcDir),
       ],
       outExtension: { ".js": outExt },
     });
 
     return r;
-  }
-
-  setOutExtensions(outExtensions: { [ext: string]: string }) {
-    this.extMapper = new ExtensionMapper(outExtensions);
   }
 
   async build(filePath: string, format: "cjs" | "esm" | "legacy") {

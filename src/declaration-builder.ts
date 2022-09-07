@@ -3,16 +3,17 @@ import type { ts } from "@ts-morph/bootstrap";
 import fs from "fs/promises";
 import { walk } from "node-os-walk";
 import path from "path";
-import type { NodePackScriptTarget } from ".";
+import type { ProgramContext } from "./program";
 import { isomorphicImport } from "./utilities/isomorphic-import";
 import { mapCompilerTarget } from "./utilities/map-compiler-target";
-import { TsWorkerPool } from "./workers";
 export class DeclarationBuilder {
-  outDir: string;
-  target?: NodePackScriptTarget;
-  tsConfigPath?: string;
+  private outDir: string;
 
-  constructor(public srcDir: string, outDir: string) {
+  constructor(
+    private program: ProgramContext,
+    private srcDir: string,
+    outDir: string
+  ) {
     this.outDir = path.join(outDir, "types");
   }
 
@@ -24,19 +25,11 @@ export class DeclarationBuilder {
       outDir: this.outDir,
     };
 
-    if (this.target) {
-      options.target = mapCompilerTarget(this.target);
+    if (this.program.buildConfig.target) {
+      options.target = mapCompilerTarget(this.program.buildConfig.target);
     }
 
     return options;
-  }
-
-  setTarget(target: NodePackScriptTarget) {
-    this.target = target;
-  }
-
-  setTsConfig(filepath: string) {
-    this.tsConfigPath = filepath;
   }
 
   private async buildJsonDeclarations() {
@@ -93,10 +86,13 @@ export class DeclarationBuilder {
   }
 
   async build() {
-    await TsWorkerPool.emitDeclarations({
-      tsConfigPath: this.tsConfigPath,
+    await this.program.tsProgram.emitDeclarations({
       compilerOptions: this.resolveCompilerOptions(),
     });
     await this.buildJsonDeclarations();
+  }
+
+  getOutDir() {
+    return this.outDir;
   }
 }
