@@ -1,14 +1,14 @@
 import fs from "fs/promises";
 import { walk } from "node-os-walk";
 import path from "path";
+import type { ProgramContext } from "./program";
 import { asRelative } from "./utilities/as-relative";
 import { CodeLine } from "./utilities/code-line";
-import type { PathAliasResolver } from "./utilities/path-alias-resolver";
 
 export class DeclarationPathRewriter {
   constructor(
-    private readonly typesDir: string,
-    private readonly pathAliases: PathAliasResolver
+    private program: ProgramContext,
+    private readonly typesDir: string
   ) {}
 
   /**
@@ -16,10 +16,10 @@ export class DeclarationPathRewriter {
    * so replaces it with the alias real path.
    */
   private rewritePath(importPath: string, resolveDir: string): string {
-    if (this.pathAliases.isAlias(importPath)) {
+    if (this.program.pathAliases.isAlias(importPath)) {
       const absImportPath = path.resolve(
         this.typesDir,
-        this.pathAliases.replaceAliasPattern(importPath)
+        this.program.pathAliases.replaceAliasPattern(importPath)
       );
       const newImport = asRelative(path.relative(resolveDir, absImportPath));
       return newImport;
@@ -51,7 +51,7 @@ export class DeclarationPathRewriter {
     const [, , importPath] =
       line.match(/(import|export).+?from\s+"(.+?)"/) ?? [];
 
-    if (importPath && this.pathAliases.isAlias(importPath)) {
+    if (importPath && this.program.pathAliases.isAlias(importPath)) {
       const newImport = this.rewritePath(importPath, resolveDir);
       return line.replace(importPath, newImport);
     }

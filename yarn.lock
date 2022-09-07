@@ -611,10 +611,10 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@ncpa0cpl/node-worker-bridge@^0.0.2":
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/@ncpa0cpl/node-worker-bridge/-/node-worker-bridge-0.0.2.tgz#9b2f2db711f8fe3b99cf47ef678da10b23d15b0b"
-  integrity sha512-TFPWFwVbeiSw27nYP9nswosYGC+zRXWpomemD+Y8+Cs5FF9qIcwrJ5UBI4qL0rKx7sTjZ8dG5OaCOzA+udO7FQ==
+"@ncpa0cpl/node-worker-bridge@^0.0.3":
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/@ncpa0cpl/node-worker-bridge/-/node-worker-bridge-0.0.3.tgz#02132cdc61a392cf09fae6043b1632c01a3a4669"
+  integrity sha512-qLcDWjgubrv8gXzQb3NT8knqix+wUFsFBATEpdLKVy4nek7lZ0mVwhgtwIy9KsdiiL5JVquEg+uZzfxm9i4MvQ==
   dependencies:
     uuid "^9.0.0"
 
@@ -3201,6 +3201,12 @@ node-releases@^2.0.6:
   version "2.0.6"
   resolved "https://registry.yarnpkg.com/node-releases/-/node-releases-2.0.6.tgz#8a7088c63a55e493845683ebf3c828d8c51c5503"
   integrity sha512-PiVXnNuFm5+iYkLBNeq5211hvO38y63T0i2KKh2KnUs3RpzJ+JtODFjkD8yjLwnDkTYF1eKXheUwdssR+NRZdg==
+
+node-worker-bridge@ncpa0cpl/node-worker-bridge:
+  version "0.0.3"
+  resolved "https://codeload.github.com/ncpa0cpl/node-worker-bridge/tar.gz/ef20549aa07998c95e6e6309aada11c7fe4ce9e5"
+  dependencies:
+    uuid "^9.0.0"
 
 normalize-path@^3.0.0:
   version "3.0.0"

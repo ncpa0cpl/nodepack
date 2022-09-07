@@ -2,12 +2,11 @@ import type esbuild from "esbuild";
 import type { Stats } from "fs";
 import fs from "fs/promises";
 import path from "path";
-import { TsWorkerPool } from "../workers";
+import type { ProgramContext } from "../program";
 import { asRelative } from "./as-relative";
 import { changeExt } from "./change-ext";
 import type { ExtensionMapper } from "./extension-mapper";
 import { CacheMap } from "./info-cache";
-import type { PathAliasResolver } from "./path-alias-resolver";
 
 const filesCache = new CacheMap<{
   hasDecorators: boolean;
@@ -15,15 +14,16 @@ const filesCache = new CacheMap<{
   transpiledFile?: Promise<string>;
 }>();
 
-export const ESbuildPlugin = (params: {
-  extMapper: ExtensionMapper;
-  srcDir: string;
-  pathAliases: PathAliasResolver;
-  decoratorsMetadata: boolean;
-  tsConfig?: string;
-}) => {
-  const { extMapper, pathAliases, srcDir, decoratorsMetadata, tsConfig } =
-    params;
+export const ESbuildPlugin = (
+  program: ProgramContext,
+  extMapper: ExtensionMapper,
+  srcDir: string
+) => {
+  const {
+    pathAliases,
+    tsProgram,
+    buildConfig: { decoratorsMetadata = false },
+  } = program;
 
   return {
     name: "nodepack-esbuild-plugin",
@@ -101,8 +101,7 @@ export const ESbuildPlugin = (params: {
           const needToTranspileWithTs = hasDecorators(fileContent);
 
           if (needToTranspileWithTs) {
-            const transpiledFile = TsWorkerPool.parseFile({
-              tsConfigPath: tsConfig,
+            const transpiledFile = tsProgram.parseFile({
               filePath: args.path,
               fileContent: fileContent,
             });
