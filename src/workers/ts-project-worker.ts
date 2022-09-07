@@ -1,5 +1,5 @@
+import { WorkerBridge } from "@ncpa0cpl/node-worker-bridge";
 import { createProject, ts } from "@ts-morph/bootstrap";
-import { WorkerBridge } from "node-worker-bridge";
 import { getCurrentExtension } from "./get-ext";
 import { getWorkersDir } from "./get-workers-dir";
 
