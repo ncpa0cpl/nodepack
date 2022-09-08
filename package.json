@@ -40,7 +40,7 @@
     "test:lint": "eslint .",
     "test:prettier": "prettier -c ./src",
     "test:tsc": "tsc --noEmit",
-    "build": "rm -rf ./dist && node ./scripts/build.cjs",
+    "build": " node ./scripts/build.cjs",
     "test:build:cjs": "rm -rf ./test/dist && node ./test/build.cjs",
     "test:build:mjs": "rm -rf ./test/dist && node ./test/build.mjs"
   },
@@ -67,7 +67,8 @@
     "@ts-morph/bootstrap": "^0.16.0",
     "dilswer": "^1.2.0",
     "node-os-walk": ">=1.0.2",
-    "node-worker-bridge": "ncpa0cpl/node-worker-bridge"
+    "node-worker-bridge": "ncpa0cpl/node-worker-bridge",
+    "pretty-error": "^4.0.0"
   },
   "peerDependencies": {
     "esbuild": "^0.15.5"
