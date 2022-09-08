@@ -11,8 +11,6 @@ export async function build(config: BuildConfig) {
   let program: Program | undefined = undefined;
 
   try {
-    console.log("Building...");
-
     config = validateBuildConfig(config);
 
     ensureAbsolutePath(config.srcDir);
@@ -24,6 +22,15 @@ export async function build(config: BuildConfig) {
     program = new Program(config);
 
     const ops: Promise<void>[] = [];
+
+    if (config.watch) {
+      console.log("Watching for changes...");
+
+      await program.watchSource();
+      return;
+    }
+
+    console.log("Building...");
 
     if (config.declarations !== "only") {
       ops.push(program.transpileSource());
