@@ -1,5 +1,4 @@
 import type esbuild from "esbuild";
-import type { Stats } from "fs";
 import fs from "fs/promises";
 import path from "path";
 import type { ProgramContext } from "../program";
@@ -7,6 +6,8 @@ import { asRelative } from "./as-relative";
 import { changeExt } from "./change-ext";
 import type { ExtensionMapper } from "./extension-mapper";
 import { CacheMap } from "./info-cache";
+import { isDirectory } from "./is-directory";
+import { isRealPath } from "./is-real-path";
 
 const filesCache = new CacheMap<{
   hasDecorators: boolean;
@@ -31,9 +32,10 @@ export const ESbuildPlugin = (
       build.onResolve({ filter: /.*/ }, async (args) => {
         if (args.importer) {
           let importPath = args.path;
+          let absImportPath = path.resolve(args.resolveDir, importPath);
 
           if (pathAliases.isAlias(args.path)) {
-            const absImportPath = path.resolve(
+            absImportPath = path.resolve(
               srcDir,
               pathAliases.replaceAliasPattern(args.path)
             );
@@ -43,18 +45,13 @@ export const ESbuildPlugin = (
             );
           }
 
-          const importExt = path.extname(importPath).toLowerCase();
           if (importPath.startsWith(".")) {
+            const importExt = (await isRealPath(absImportPath))
+              ? path.extname(importPath).toLowerCase()
+              : "";
+
             if (importExt === "") {
-              let stat: Stats | undefined = undefined;
-
-              try {
-                stat = await fs.stat(path.resolve(args.resolveDir, importPath));
-              } catch (e) {
-                //
-              }
-
-              if (stat?.isDirectory()) {
+              if (await isDirectory(absImportPath)) {
                 let p = importPath;
                 if (p.endsWith("/")) {
                   p = p.slice(0, -1);
