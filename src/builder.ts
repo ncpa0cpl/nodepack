@@ -68,5 +68,61 @@ export class Builder {
     if (format === "legacy") {
       return this.buildFile(filePath, this.legacyBuildDir, "cjs", ".js");
     }
+
+    throw Error("Impossible scenario.");
+  }
+
+  private async watchFile(
+    filePath: string,
+    outDir: string,
+    format: esbuild.BuildOptions["format"],
+    ext: string
+  ) {
+    const { plugins: additionalPlugins = [], ...additionalOptions } =
+      this.program.buildConfig.esbuildOptions ?? {};
+
+    const relativePath = path.relative(this.srcDir, filePath);
+    const outFilePath = path.join(outDir, relativePath);
+
+    const extMapper = this.program.extMap.withFormat(ext);
+
+    const inputExt = path.extname(filePath);
+    const outExt = extMapper.hasMapping(inputExt)
+      ? extMapper.map(inputExt)
+      : ext;
+
+    const r = await esbuild.build({
+      ...additionalOptions,
+      entryPoints: [filePath],
+      outfile: changeExt(outFilePath, outExt),
+      target: this.program.buildConfig.target,
+      tsconfig: this.program.buildConfig.tsConfig,
+      bundle: true,
+      format,
+      plugins: [
+        ...additionalPlugins,
+        ESbuildPlugin(this.program, extMapper, this.srcDir),
+      ],
+      outExtension: { ".js": outExt },
+      watch: true,
+    });
+
+    return r;
+  }
+
+  async watch(filePath: string, format: "cjs" | "esm" | "legacy") {
+    if (format === "cjs") {
+      return this.watchFile(filePath, this.cjsBuildDir, "cjs", ".cjs");
+    }
+
+    if (format === "esm") {
+      return this.watchFile(filePath, this.esmBuildDir, "esm", ".mjs");
+    }
+
+    if (format === "legacy") {
+      return this.watchFile(filePath, this.legacyBuildDir, "cjs", ".js");
+    }
+
+    throw Error("Impossible scenario.");
   }
 }

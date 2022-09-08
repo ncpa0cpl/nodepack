@@ -70,7 +70,21 @@ export type BuildConfig = {
    *   });
    */
   pathAliases?: Record<`${string}/*`, `./${string}/*` | "./*">;
+  /**
+   * Wether to generate metadata along with the typescript
+   * decorators, this requires to transpile files first with a
+   * TypeScript compiler before compiling with esbuild and will
+   * make the build process noticeably slower.
+   */
   decoratorsMetadata?: boolean;
+  /**
+   * When watch mode is enabled, nodepack will listen for changes
+   * on the file system and rebuild whenever a file changes.
+   *
+   * @experimental This module is currently experimental and you
+   * may encounter bugs if you use it.
+   */
+  watch?: boolean;
   /** Options to pass to the `esbuild` compiler. */
   esbuildOptions?: Omit<
     esbuild.BuildOptions,
@@ -129,6 +143,10 @@ export const validateBuildConfig = (config: BuildConfig) => {
       type: DataType.RecordOf({}),
     },
     decoratorsMetadata: {
+      required: false,
+      type: DataType.Boolean,
+    },
+    watch: {
       required: false,
       type: DataType.Boolean,
     },
