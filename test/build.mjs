@@ -10,7 +10,7 @@ async function main() {
       target: "es2020",
       srcDir: path.resolve(__dirname, "src"),
       outDir: path.resolve(__dirname, "dist"),
-      formats: ["cjs", "esm", "legacy", 1],
+      formats: ["cjs", "esm", "legacy"],
       declarations: true,
       tsConfig: path.resolve(__dirname, "tsconfig.json"),
       decoratorsMetadata: true,
