@@ -23,7 +23,7 @@
     "typescript": "^4.7.4"
   },
   "name": "@ncpa0cpl/nodepack",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "main": "./dist/legacy/index.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
