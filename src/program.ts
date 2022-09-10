@@ -13,6 +13,7 @@ import { CacheMap } from "./utilities/info-cache";
 import { isDirectory } from "./utilities/is-directory";
 import { isParsable } from "./utilities/is-parsable";
 import { isRealPath } from "./utilities/is-real-path";
+import { IsomorphicImportsMapper } from "./utilities/isomorphic-imports-mapper";
 import { PathAliasResolver } from "./utilities/path-alias-resolver";
 import { getTsWorkerPool } from "./workers";
 
@@ -23,6 +24,7 @@ export type ProgramContext = {
   formats: FormatsFacade;
   extMap: ExtensionMapper;
   tsProgram: ReturnType<typeof getTsWorkerPool>;
+  isomorphicImports: IsomorphicImportsMapper;
 };
 
 export class Program {
@@ -36,6 +38,10 @@ export class Program {
       formats: new FormatsFacade(config.formats ?? []),
       extMap: new ExtensionMapper(config.extMapping ?? {}),
       tsProgram: getTsWorkerPool(config.tsConfig),
+      isomorphicImports: new IsomorphicImportsMapper(
+        config.isomorphicImports ?? {},
+        config.srcDir
+      ),
     };
   }
 
@@ -56,7 +62,8 @@ export class Program {
         if (
           this.context.excludes.isNotExcluded(filePath) &&
           (isParsable(filePath) ||
-            this.context.extMap.hasMapping(path.extname(filePath)))
+            this.context.extMap.hasMapping(path.extname(filePath))) &&
+          !this.context.isomorphicImports.isIsomorphicTarget(filePath)
         ) {
           filesForCompilation.push(filePath);
         }
@@ -138,7 +145,8 @@ export class Program {
             if (
               this.context.excludes.isNotExcluded(filePath) &&
               (isParsable(filePath) ||
-                this.context.extMap.hasMapping(path.extname(filePath)))
+                this.context.extMap.hasMapping(path.extname(filePath))) &&
+              !this.context.isomorphicImports.isIsomorphicTarget(filePath)
             ) {
               filesForCompilation.push(filePath);
             }

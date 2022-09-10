@@ -85,6 +85,35 @@ export type BuildConfig = {
    * may encounter bugs if you use it.
    */
   watch?: boolean;
+  /**
+   * Files that should get their imports replaced to other path,
+   * depending on the format for which it is compiled.
+   *
+   * All path provided should be relative to the `srcDir`.
+   *
+   * If no import is defined for a format, the import will be
+   * left as is.
+   *
+   * @example
+   *   build({
+   *     // ...
+   *     isomorphicImports: {
+   *       "./index.ts": {
+   *         mjs: "./index.esm.ts",
+   *         cjs: "./index.cjs.ts",
+   *         js: "./index.legacy.ts",
+   *       },
+   *     },
+   *   });
+   */
+  isomorphicImports?: Record<
+    string,
+    {
+      cjs?: string;
+      mjs?: string;
+      js?: string;
+    }
+  >;
   /** Options to pass to the `esbuild` compiler. */
   esbuildOptions?: Omit<
     esbuild.BuildOptions,
@@ -149,6 +178,10 @@ export const validateBuildConfig = (config: BuildConfig) => {
     watch: {
       required: false,
       type: DataType.Boolean,
+    },
+    isomorphicImports: {
+      required: false,
+      type: DataType.RecordOf({}),
     },
     esbuildOptions: {
       required: false,
