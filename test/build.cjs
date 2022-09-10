@@ -23,6 +23,18 @@ async function main() {
       pathAliases: {
         "@Root/*": "./*",
       },
+      isomorphicImports: {
+        "./worker-test/get-ext/get-ext.ts": {
+          cjs: "./worker-test/get-ext/get-ext.cjs.ts",
+          mjs: "./worker-test/get-ext/get-ext.mjs.ts",
+          js: "./worker-test/get-ext/get-ext.js.ts",
+        },
+        "./worker-test/get-workers-dir/get-workers-dir.ts": {
+          cjs: "./worker-test/get-workers-dir/get-workers-dir.cjs.ts",
+          mjs: "./worker-test/get-workers-dir/get-workers-dir.mjs.ts",
+          js: "./worker-test/get-workers-dir/get-workers-dir.js.ts",
+        },
+      },
     });
   } catch (e) {
     console.error(e);
