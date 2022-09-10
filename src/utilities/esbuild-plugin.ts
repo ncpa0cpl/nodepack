@@ -81,16 +81,19 @@ export const ESbuildPlugin = (
 
       if (decoratorsMetadata) {
         const decoratorRegex =
-          /class.*?{.*?@[a-zA-Z0-9]+?(\(.*?\)){0,1}[\s\n]+?[a-zA-Z0-9]+?\(.*?\).*?[\s\n]*?{.+?}/ms;
+          /class.*?{.*?@[a-zA-Z0-9]+?(\(.*?\)){0,1}[\s\n]+?[a-zA-Z0-9]+?.+?;/ms;
         const hasDecorators = (fileContent: string) =>
           decoratorRegex.test(fileContent);
 
         build.onLoad({ filter: /\.[mc]{0,1}tsx{0,1}/ }, async (args) => {
+          const ext = path.extname(args.path);
+          const loader = [".ts", ".mts", ".cts"].includes(ext) ? "ts" : "tsx";
+
           const cachedFile = filesCache.get(args.path);
           if (cachedFile) {
             if (cachedFile.hasDecorators === false)
-              return { contents: cachedFile.originalSourceFile };
-            else return { contents: await cachedFile.transpiledFile };
+              return { contents: cachedFile.originalSourceFile, loader };
+            else return { contents: await cachedFile.transpiledFile, loader };
           }
 
           const fileContent = await fs.readFile(args.path, "utf-8");
@@ -108,7 +111,7 @@ export const ESbuildPlugin = (
               transpiledFile,
             });
 
-            return { contents: await transpiledFile };
+            return { contents: await transpiledFile, loader: "js" };
           } else {
             filesCache.set(args.path, {
               hasDecorators: false,
@@ -116,7 +119,7 @@ export const ESbuildPlugin = (
             });
           }
 
-          return { contents: fileContent };
+          return { contents: fileContent, loader };
         });
       }
     },
