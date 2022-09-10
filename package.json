@@ -67,7 +67,6 @@
     "@ts-morph/bootstrap": "^0.16.0",
     "dilswer": "^1.2.0",
     "node-os-walk": ">=1.0.2",
-    "node-worker-bridge": "ncpa0cpl/node-worker-bridge",
     "pretty-error": "^4.0.0"
   },
   "peerDependencies": {
