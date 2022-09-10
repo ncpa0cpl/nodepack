@@ -618,13 +618,16 @@
   dependencies:
     uuid "^9.0.0"
 
-"@ncpa0cpl/nodepack@^1.2.4":
-  version "1.2.4"
-  resolved "https://registry.yarnpkg.com/@ncpa0cpl/nodepack/-/nodepack-1.2.4.tgz#b9a6995d267ebe261a53e1b920cd2a36dbe26b46"
-  integrity sha512-5GB0dgSbUQIVPuxE3JVOzHPC2RD7PiFBxoRQrxrVblCLjjZTZJPACl1V3dxLTOO1PZ+xwcFzF/EWW+sbinrqdA==
+"@ncpa0cpl/nodepack@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@ncpa0cpl/nodepack/-/nodepack-2.0.0.tgz#ac9426f47b1064c33cb37126c9d21f881e823aae"
+  integrity sha512-2dOsxC69g2r4vuUz2nzDgPzaR/+ZEKHUtoCYYmvFf1nCePSk926WwI6RPjWgLP/S/wXzEaHIxSDE89h8H4sAgA==
   dependencies:
+    "@ncpa0cpl/node-worker-bridge" "^0.0.3"
     "@ts-morph/bootstrap" "^0.16.0"
+    dilswer "^1.2.0"
     node-os-walk ">=1.0.2"
+    pretty-error "^4.0.0"
   optionalDependencies:
     json-to-ts "^1.7.0"
 
@@ -3279,12 +3282,6 @@ node-releases@^2.0.6:
   version "2.0.6"
   resolved "https://registry.yarnpkg.com/node-releases/-/node-releases-2.0.6.tgz#8a7088c63a55e493845683ebf3c828d8c51c5503"
   integrity sha512-PiVXnNuFm5+iYkLBNeq5211hvO38y63T0i2KKh2KnUs3RpzJ+JtODFjkD8yjLwnDkTYF1eKXheUwdssR+NRZdg==
-
-node-worker-bridge@ncpa0cpl/node-worker-bridge:
-  version "0.0.3"
-  resolved "https://codeload.github.com/ncpa0cpl/node-worker-bridge/tar.gz/ef20549aa07998c95e6e6309aada11c7fe4ce9e5"
-  dependencies:
-    uuid "^9.0.0"
 
 normalize-path@^3.0.0:
   version "3.0.0"
