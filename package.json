@@ -40,7 +40,7 @@
     "test:lint": "eslint .",
     "test:prettier": "prettier -c ./src",
     "test:tsc": "tsc --noEmit",
-    "build": " node ./scripts/build.cjs",
+    "build": "rm -rf ./dist && node ./scripts/build.cjs",
     "test:build:cjs": "rm -rf ./test/dist && node ./test/build.cjs",
     "test:build:mjs": "rm -rf ./test/dist && node ./test/build.mjs"
   },
