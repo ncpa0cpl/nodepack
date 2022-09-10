@@ -9,6 +9,25 @@
 - Generate TypeScript declarations for JSON files
 - Path aliases out of the box, along with import rewriting in `.d.ts` files
 
+## Table of contents
+
+1. [Installation](#installation)
+2. [Usage](#usage)
+3. [Options](#options)
+   1. [declarations](#declarations)
+   2. [decoratorsMetadata](#decoratorsMetadata)
+   3. [esbuildOptions](#esbuildOptions)
+   4. [exclude](#exclude)
+   5. [extMapping](#extMapping)
+   6. [formats](#formats)
+   7. [isomorphicImports](#isomorphicImports)
+   8. [outDir](#outdir)
+   9. [pathAliases](#pathAliases)
+   10. [srcDir](#srcdir)
+   11. [target](#target)
+   12. [tsConfig](#tsConfig)
+   13. [watch](#watch)
+
 ## Installation
 
 1. Intall this package and `esbuild` using _yarn_ or _npm_:
@@ -89,43 +108,40 @@ Then for node environments to correctly resolve the build files depending on the
 
 ## Options
 
-#### target
-
-Target environment for the generated JavaScript.
-
-#### srcDir
-
-Absolute path to the directory containing the source files.
-
-#### outDir
-
-Absolute path to the directory to which the compiled source should be outputted to.
-
-#### formats
-
-List of format types that should be outputted.
-
-- `cjs` format - CommonJS module format with a .cjs file extension.
-- `esm` format - ES module format with a .mjs file extension.
-- `legacy` format - CommonJS module format with a .js file extension.
-
-#### tsConfig
-
-Absolute path to the TypeScript config file.
-
-#### exclude
-
-Regex patterns used to exclude files from compilation.
-
 #### declarations
+
+**(optional)**
+_Default: false_
 
 Indicates if typescript declarations are to be generated. If set to true, `.d.ts` files will be generated along the JavaScript files, if set to `only` no JavaScript will be emitted, only the declarations.
 
 To be able to generate declarations, TypeScript package must be installed.
 
+#### decoratorsMetadata
+
+**(optional)**
+_Default: false_
+
+Wether to generate metadata along with the typescript decorators, this requires to transpile files first with a TypeScript compiler before compiling with esbuild and will make the build process noticeably slower.
+
+#### esbuildOptions
+
+**(optional)**
+
+Options to pass to the `esbuild` compiler. ([See available options here](https://esbuild.github.io/api/#simple-options)), most of the options are available but some can potentially break the compilation process.
+
+#### exclude
+
+**(optional)**
+_Default: []_
+
+Regex patterns used to exclude files from compilation.
+
 #### extMapping
 
-Allows to customize the file extension of the generated files. This is useful for custom esbuild loaders, like a file loader.
+**(optional)**
+
+Allows to customize the file extension of the outputted files. This is useful for custom esbuild loaders, like a file loader.
 
 If you want to map given extension to the used format (`.cjs`, `.mjs` or `.js`), you can use a `%FORMAT%` wildcard instead of a extension.
 
@@ -164,7 +180,54 @@ dist
 
 To statically map `.png` file to other extension just replace the `%FORMAT%` with the desired extension.
 
+#### formats
+
+**(required)**
+
+List of format types that should be outputted.
+
+- `cjs` format - CommonJS module format with a .cjs file extension.
+- `esm` format - ES module format with a .mjs file extension.
+- `legacy` format - CommonJS module format with a .js file extension.
+
+#### isomorphicImports
+
+**(optional)**
+_Default: {}_
+
+Files that should get their imports replaced to other path, depending on the extension for which it is compiled.
+
+All path provided should be relative to the `srcDir`.
+
+If no import is defined for a format, the import will be left as is.
+
+Since some of the features in Node are only available for ESModules or CommonJS modules (for example `__filename` or `import.meta`), it might be helpful to have different file be imported depending on which module type the program is using.
+
+To define a different index file for each of the compiled formats:
+
+```ts
+build({
+  // ...
+  isomorphicImports: {
+    "./index.ts": {
+      mjs: "./index.esm.ts",
+      cjs: "./index.cjs.ts",
+      js: "./index.legacy.ts",
+    },
+  },
+});
+```
+
+#### outDir
+
+**(required)**
+
+Absolute path to the directory to which the compiled source should be outputted to.
+
 #### pathAliases
+
+**(optional)**
+_Default: {}_
 
 A map of path aliases.
 
@@ -185,6 +248,29 @@ build({
 });
 ```
 
-#### esbuildOptions
+#### srcDir
 
-Options to pass to the `esbuild` compiler. ([See available options here](https://esbuild.github.io/api/#simple-options))
+**(required)**
+
+Absolute path to the directory containing the source files.
+
+#### target
+
+**(required)**
+
+Target environment for the generated JavaScript.
+
+#### tsConfig
+
+**(optional)**
+
+Absolute path to the TypeScript config file.
+
+#### watch
+
+**(optional)**
+_Default: false_
+
+When watch mode is enabled, nodepack will listen for changes on the file system and rebuild whenever a file changes.
+
+_This option is currently experimental and you may encounter bugs if you use it._

@@ -16,29 +16,6 @@ export type NodePackScriptTarget =
   | "ESNext";
 
 export type BuildConfig = {
-  /** Target environment for the generated JavaScript. */
-  target: NodePackScriptTarget;
-  /** Absolute path to the directory containing the source files. */
-  srcDir: string;
-  /**
-   * Absolute path to the directory to which the compiled source
-   * should be outputted to.
-   */
-  outDir: string;
-  /**
-   * List of format types that should be outputted.
-   *
-   * - `cjs` format - CommonJS module format with a .cjs file
-   *   extension.
-   * - `esm` format - ES module format with a .mjs file extension.
-   * - `legacy` format - CommonJS module format with a .js file
-   *   extension.
-   */
-  formats: Array<"commonjs" | "cjs" | "esmodules" | "esm" | "legacy">;
-  /** Absolute path to the TypeScript config file. */
-  tsConfig?: string;
-  /** Regex patterns used to exclude files from compilation. */
-  exclude?: RegExp | Array<RegExp>;
   /**
    * Indicates if typescript declarations are to be generated. If
    * set to true, `.d.ts` files will be generated along the
@@ -50,49 +27,61 @@ export type BuildConfig = {
    */
   declarations?: boolean | "only";
   /**
-   * Allows to customize the file extension of the generated
-   * files.
-   */
-  extMapping?: Record<`.${string}`, `.${string}` | "%FORMAT%">;
-  /**
-   * A map of path aliases.
-   *
-   * Each path alias must end with a `/*`, and each alias value
-   * must be a path relative to the `srcDir`, start with a `./`
-   * and end with a `/*`.
-   *
-   * @example
-   *   build({
-   *     // ...
-   *     pathAliases: {
-   *       "@Utils/*": "./Utils/*",
-   *     },
-   *   });
-   */
-  pathAliases?: Record<`${string}/*`, `./${string}/*` | "./*">;
-  /**
    * Wether to generate metadata along with the typescript
    * decorators, this requires to transpile files first with a
    * TypeScript compiler before compiling with esbuild and will
    * make the build process noticeably slower.
    */
   decoratorsMetadata?: boolean;
+  /** Options to pass to the `esbuild` compiler. */
+  esbuildOptions?: Omit<
+    esbuild.BuildOptions,
+    | "entryPoints"
+    | "outfile"
+    | "outdir"
+    | "outbase"
+    | "target"
+    | "tsconfig"
+    | "bundle"
+    | "format"
+    | "outExtension"
+    | "absWorkingDir"
+    | "watch"
+  >;
+  /** Regex patterns used to exclude files from compilation. */
+  exclude?: RegExp | Array<RegExp>;
   /**
-   * When watch mode is enabled, nodepack will listen for changes
-   * on the file system and rebuild whenever a file changes.
-   *
-   * @experimental This module is currently experimental and you
-   * may encounter bugs if you use it.
+   * Allows to customize the file extension of the outputted
+   * files.
    */
-  watch?: boolean;
+  extMapping?: Record<`.${string}`, `.${string}` | "%FORMAT%">;
+  /**
+   * List of format types that should be outputted.
+   *
+   * - `cjs` format - CommonJS module format with a .cjs file
+   *   extension.
+   * - `esm` format - ES module format with a .mjs file extension.
+   * - `legacy` format - CommonJS module format with a .js file
+   *   extension.
+   */
+  formats: Array<"commonjs" | "cjs" | "esmodules" | "esm" | "legacy">;
   /**
    * Files that should get their imports replaced to other path,
-   * depending on the format for which it is compiled.
+   * depending on the extension for which it is compiled.
    *
    * All path provided should be relative to the `srcDir`.
    *
    * If no import is defined for a format, the import will be
    * left as is.
+   *
+   * Since some of the features in Node are only available for
+   * ESModules or CommonJS modules (for example `__filename` or
+   * `import.meta`), it might be helpful to have different file
+   * be imported depending on which module type the program is
+   * using.
+   *
+   * To define a different index file for each of the compiled
+   * formats:
    *
    * @example
    *   build({
@@ -114,21 +103,41 @@ export type BuildConfig = {
       js?: string;
     }
   >;
-  /** Options to pass to the `esbuild` compiler. */
-  esbuildOptions?: Omit<
-    esbuild.BuildOptions,
-    | "entryPoints"
-    | "outfile"
-    | "outdir"
-    | "outbase"
-    | "target"
-    | "tsconfig"
-    | "bundle"
-    | "format"
-    | "outExtension"
-    | "absWorkingDir"
-    | "watch"
-  >;
+  /**
+   * Absolute path to the directory to which the compiled source
+   * should be outputted to.
+   */
+  outDir: string;
+  /**
+   * A map of path aliases.
+   *
+   * Each path alias must end with a `/*`, and each alias value
+   * must be a path relative to the `srcDir`, start with a `./`
+   * and end with a `/*`.
+   *
+   * @example
+   *   build({
+   *     // ...
+   *     pathAliases: {
+   *       "@Utils/*": "./Utils/*",
+   *     },
+   *   });
+   */
+  pathAliases?: Record<`${string}/*`, `./${string}/*` | "./*">;
+  /** Absolute path to the directory containing the source files. */
+  srcDir: string;
+  /** Target environment for the generated JavaScript. */
+  target: NodePackScriptTarget;
+  /** Absolute path to the TypeScript config file. */
+  tsConfig?: string;
+  /**
+   * When watch mode is enabled, nodepack will listen for changes
+   * on the file system and rebuild whenever a file changes.
+   *
+   * @experimental This option is currently experimental and you
+   * may encounter bugs if you use it.
+   */
+  watch?: boolean;
 };
 
 export const validateBuildConfig = (config: BuildConfig) => {
