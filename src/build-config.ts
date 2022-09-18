@@ -1,5 +1,6 @@
 import { createValidatedFunction, DataType } from "dilswer";
 import type esbuild from "esbuild";
+import path from "node:path";
 
 export type NodePackScriptTarget =
   | "es2022"
@@ -96,11 +97,11 @@ export type BuildConfig = {
    *   });
    */
   isomorphicImports?: Record<
-    string,
+    `./${string}`,
     {
-      cjs?: string;
-      mjs?: string;
-      js?: string;
+      cjs?: `./${string}`;
+      mjs?: `./${string}`;
+      js?: `./${string}`;
     }
   >;
   /**
@@ -141,6 +142,54 @@ export type BuildConfig = {
 };
 
 export const validateBuildConfig = (config: BuildConfig) => {
+  const isValidExtension = (ext: any) => {
+    if (typeof ext !== "string") return false;
+    return ext.startsWith(".") && ext.length > 1;
+  };
+
+  const isValidExtMapping = (
+    extMapping: unknown
+  ): extMapping is BuildConfig["extMapping"] => {
+    if (typeof extMapping === "object" && extMapping !== null) {
+      for (const [key, value] of Object.entries(extMapping)) {
+        if (!isValidExtension(key)) return false;
+        if (!isValidExtension(value) && value !== "%FORMAT%") return false;
+      }
+    }
+    return true;
+  };
+
+  const isRelative = (path: unknown): path is `./${string}` => {
+    if (typeof path !== "string") return false;
+    return path.startsWith("./");
+  };
+
+  const isAbsolute = (filepath: unknown): filepath is string =>
+    typeof filepath === "string" && path.isAbsolute(filepath);
+
+  const isValidPathAliasMap = (
+    map: unknown
+  ): map is BuildConfig["pathAliases"] => {
+    if (typeof map === "object" && map !== null) {
+      for (const [key, value] of Object.entries(map)) {
+        if (!key.endsWith("/*")) return false;
+        if (!isRelative(value)) return false;
+        if (!value.endsWith("/*")) return false;
+      }
+      return true;
+    }
+    return false;
+  };
+
+  const isRecordWithRelativeKeys = (
+    r: unknown
+  ): r is Record<`./${string}`, unknown> => {
+    if (typeof r === "object" && r !== null) {
+      return Object.keys(r).every((key) => isRelative(key));
+    }
+    return false;
+  };
+
   const dt = DataType.RecordOf({
     target: DataType.OneOf(
       DataType.Literal("es2022"),
@@ -167,18 +216,18 @@ export const validateBuildConfig = (config: BuildConfig) => {
         DataType.Literal("legacy")
       )
     ),
-    tsConfig: { required: false, type: DataType.String },
+    tsConfig: { required: false, type: DataType.Custom(isAbsolute) },
     declarations: {
       required: false,
       type: DataType.OneOf(DataType.Boolean, DataType.Literal("only")),
     },
     extMapping: {
       required: false,
-      type: DataType.RecordOf({}),
+      type: DataType.Custom(isValidExtMapping),
     },
     pathAliases: {
       required: false,
-      type: DataType.RecordOf({}),
+      type: DataType.Custom(isValidPathAliasMap),
     },
     decoratorsMetadata: {
       required: false,
@@ -190,7 +239,16 @@ export const validateBuildConfig = (config: BuildConfig) => {
     },
     isomorphicImports: {
       required: false,
-      type: DataType.RecordOf({}),
+      type: DataType.AllOf(
+        DataType.Dict(
+          DataType.RecordOf({
+            cjs: { required: false, type: DataType.Custom(isRelative) },
+            mjs: { required: false, type: DataType.Custom(isRelative) },
+            js: { required: false, type: DataType.Custom(isRelative) },
+          })
+        ),
+        DataType.Custom(isRecordWithRelativeKeys)
+      ),
     },
     esbuildOptions: {
       required: false,

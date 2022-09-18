@@ -48,7 +48,10 @@ export async function build(config: BuildConfig) {
       const pe = new PrettyError()
         .removeAllAliases()
         .skip((line) => {
-          return line.path ? line.path.startsWith("internal") : false;
+          return line.path
+            ? line.path.startsWith("internal") ||
+                line.path.startsWith("node:internal")
+            : false;
         })
         .filter((line) => {
           line.shortenedAddr =
