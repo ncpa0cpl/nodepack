@@ -9,11 +9,6 @@ build({
   formats: ["cjs", "esm", "legacy"],
   tsConfig: path.resolve(__dirname, "../tsconfig.json"),
   declarations: true,
-  extMapping: {
-    ".js": ".js",
-    ".mjs": ".mjs",
-    ".cjs": ".cjs",
-  },
   isomorphicImports: {
     "./workers/get-ext/get-ext.ts": {
       cjs: "./workers/get-ext/get-ext.cjs.ts",
