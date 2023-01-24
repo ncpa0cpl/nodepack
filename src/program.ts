@@ -1,4 +1,4 @@
-import type { BuildResult } from "esbuild";
+import type { BuildContext } from "esbuild";
 import fs from "fs";
 import { walk } from "node-os-walk";
 import path from "path";
@@ -114,15 +114,35 @@ export class Program {
       this.context.buildConfig.outDir
     );
 
+    const watched = new Map<string, BuildContext[]>();
+
     const startWatchingSourceFile = async (file: string) => {
-      if (await isRealPath(file))
-        return Promise.all(
-          [
-            this.context.formats.isCjs && builder.watch(file, "cjs"),
-            this.context.formats.isEsm && builder.watch(file, "esm"),
-            this.context.formats.isLegacy && builder.watch(file, "legacy"),
-          ].filter((b): b is Promise<BuildResult> => !!b)
-        );
+      if (await isRealPath(file)) {
+        const awaiters: Promise<any>[] = [];
+        const ctxs: BuildContext[] = [];
+
+        if (this.context.formats.isCjs) {
+          const { awaiter, buildContext } = await builder.watch(file, "cjs");
+          awaiters.push(awaiter);
+          ctxs.push(buildContext);
+        }
+
+        if (this.context.formats.isEsm) {
+          const { awaiter, buildContext } = await builder.watch(file, "esm");
+          awaiters.push(awaiter);
+          ctxs.push(buildContext);
+        }
+
+        if (this.context.formats.isLegacy) {
+          const { awaiter, buildContext } = await builder.watch(file, "legacy");
+          awaiters.push(awaiter);
+          ctxs.push(buildContext);
+        }
+
+        watched.set(file, ctxs);
+
+        return Promise.all(awaiters);
+      }
 
       return Promise.resolve([]);
     };
@@ -131,7 +151,19 @@ export class Program {
       fs.watch(dir, {}, async (eventType, filename) => {
         if (eventType === "rename") {
           console.log("file rename detected", filename);
-          onFileRename(path.resolve(dir, filename));
+
+          const filepath = path.resolve(dir, filename);
+
+          const previousCtxs = watched.get(filepath);
+          watched.delete(filepath);
+          if (previousCtxs) {
+            for (const ctx of previousCtxs) {
+              await ctx.cancel();
+              await ctx.dispose();
+            }
+          }
+
+          onFileRename(filepath);
         }
       });
     };

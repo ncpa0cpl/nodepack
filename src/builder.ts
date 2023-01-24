@@ -135,7 +135,7 @@ export class Builder {
       ? extMapper.map(inputExt)
       : ext;
 
-    const r = await esbuild.build({
+    const buildContext = await esbuild.context({
       ...additionalOptions,
       entryPoints: [actualFilePath],
       outfile: changeExt(outFilePath, outExt),
@@ -148,13 +148,15 @@ export class Builder {
         ESbuildPlugin(this.program, extMapper, this.srcDir),
       ],
       outExtension: { ".js": outExt },
-      watch: true,
     });
 
-    return r;
+    return {
+      buildContext,
+      awaiter: buildContext.watch(),
+    };
   }
 
-  async watch(filePath: string, format: "cjs" | "esm" | "legacy") {
+  watch(filePath: string, format: "cjs" | "esm" | "legacy") {
     const isomorphicPath = this.resolveIsomorphicImport(filePath, format);
 
     if (format === "cjs") {
