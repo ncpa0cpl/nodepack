@@ -28,14 +28,14 @@ export class IsomorphicImportsMapper {
     const normalizedIsomorphicImports: typeof this.isomorphicImports = {};
 
     for (const [key, value] of Object.entries(isomorphicImports)) {
-      normalizedIsomorphicImports[path.normalize(key)] = value;
+      normalizedIsomorphicImports[path.normalize(key) as `./${string}`] = value;
     }
 
     Object.assign(this.isomorphicImports, normalizedIsomorphicImports);
   }
 
   private getSelectedImportPath(
-    paths: undefined | typeof this.isomorphicImports[string],
+    paths: undefined | (typeof this.isomorphicImports)[`./${string}`],
     importPath: string,
     format: "cjs" | "esm" | "legacy"
   ) {
@@ -76,10 +76,14 @@ export class IsomorphicImportsMapper {
     const isAbsolute = path.isAbsolute(importPath);
 
     if (isAbsolute) {
-      const relative = path.relative(this.srcDir, importPath);
+      const relative = ("./" +
+        path.relative(this.srcDir, importPath)) as `./${string}`;
       return this.isomorphicImports[relative] !== undefined;
     } else {
-      return this.isomorphicImports[path.normalize(importPath)] !== undefined;
+      return (
+        this.isomorphicImports[path.normalize(importPath) as `./${string}`] !==
+        undefined
+      );
     }
   }
 
@@ -87,11 +91,13 @@ export class IsomorphicImportsMapper {
     const isAbsolute = path.isAbsolute(importPath);
 
     if (isAbsolute) {
-      const relative = path.relative(this.srcDir, importPath);
+      const relative = ("./" +
+        path.relative(this.srcDir, importPath)) as `./${string}`;
       const importPaths = this.isomorphicImports[relative];
       return this.getSelectedImportPath(importPaths, importPath, format);
     } else {
-      const importPaths = this.isomorphicImports[path.normalize(importPath)];
+      const importPaths =
+        this.isomorphicImports[path.normalize(importPath) as `./${string}`];
       return this.getSelectedImportPath(importPaths, importPath, format);
     }
   }

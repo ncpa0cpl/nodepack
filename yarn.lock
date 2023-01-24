@@ -3154,7 +3154,7 @@ clify.js@ncpa0cpl/clify.js:
 
 git-hook-tasks@ncpa0cpl/git-hook-tasks:
   version: 1.0.0
-  resolution: "git-hook-tasks@https://github.com/ncpa0cpl/git-hook-tasks.git#commit=3307c52974824bfcdebe88241cb060ef2a36b382"
+  resolution: "git-hook-tasks@https://github.com/ncpa0cpl/git-hook-tasks.git#commit=475046a2550d299c6e807dad502a83dbbc25a0d6"
   dependencies:
     async-await-queue: ^1.2.1
     chalk: ^4.0.0
@@ -3166,7 +3166,7 @@ git-hook-tasks@ncpa0cpl/git-hook-tasks:
     husky: ^8.0.1
   bin:
     git-hook-tasks: dist/bin/bin.js
-  checksum: 1d85e1c93a536a300fe9d30c73993eee6070980b252a4b592cf0d0de717a9591a7cd2a0883c9a2ec6c7b3b5cddb157d28030a5c8899713264632c907783f25d9
+  checksum: 126a7004a73673ed1d9bd98c968b2a05108484adcde62b3bdae1d42cb2cf9509ab922e2b1779ce99c2e4700c9afde86bcdd89883887c8aa820f0a275be19740b
   languageName: node
   linkType: hard
 
