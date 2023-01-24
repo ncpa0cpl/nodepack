@@ -1,6 +1,6 @@
 {
   "devDependencies": {
-    "@ncpa0cpl/nodepack": "^2.0.1",
+    "@ncpa0cpl/nodepack": "latest",
     "@swc-node/register": "^1.5.5",
     "@swc/core": "^1.3.28",
     "@swc/jest": "^0.2.24",
@@ -40,9 +40,7 @@
     "test:lint": "eslint .",
     "test:prettier": "prettier -c ./src",
     "test:tsc": "tsc --noEmit",
-    "build": "rm -rf ./dist && node ./scripts/build.cjs",
-    "test:build:cjs": "rm -rf ./test/dist && node ./test/build.cjs",
-    "test:build:mjs": "rm -rf ./test/dist && node ./test/build.mjs"
+    "build": "node ./scripts/build.cjs"
   },
   "keywords": [
     "esbuild",

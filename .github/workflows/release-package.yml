@@ -27,12 +27,14 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 14
-      - uses: borales/actions-yarn@v3.0.0
-        with:
-          cmd: install
-      - uses: borales/actions-yarn@v3.0.0
-        with:
-          cmd: build
+      - name: Installing dependencies
+        run: ./.yarn/releases/yarn-3.3.1.cjs
+      - name: Validating TypeScript
+        run: ./.yarn/releases/yarn-3.3.1.cjs test:tsc
+      - name: Running Unit Tests
+        run: ./.yarn/releases/yarn-3.3.1.cjs test:jest
+      - name: Building package
+        run: ./.yarn/releases/yarn-3.3.1.cjs build
       - name: Publish
         env:
           NPM_TOKEN: ${{ secrets.NPM_AUTOMATION_TOKEN }}
