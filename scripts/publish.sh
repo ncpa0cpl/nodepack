@@ -1,5 +1,6 @@
-
 #!/usr/bin/env bash
+
+set -o errexit
 
 issemver=$(./scripts/check-semver.sh -t "$TAG_NAME")
 currenttag=$(npm pkg get version)
