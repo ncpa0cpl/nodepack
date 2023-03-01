@@ -15,11 +15,16 @@ const filesCache = new CacheMap<{
   transpiledFile?: Promise<string>;
 }>();
 
-export const ESbuildPlugin = (
-  program: ProgramContext,
-  extMapper: ExtensionMapper,
-  srcDir: string
-) => {
+export const ESbuildPlugin = (params: {
+  program: ProgramContext;
+  extMapper: ExtensionMapper;
+  srcDir: string;
+  outDir: string;
+  outExt: string;
+  vendors: string[];
+}) => {
+  const { extMapper, outDir, program, srcDir, vendors, outExt } = params;
+
   const {
     pathAliases,
     tsProgram,
@@ -30,6 +35,23 @@ export const ESbuildPlugin = (
     name: "nodepack-esbuild-plugin",
     setup(build: esbuild.PluginBuild) {
       build.onResolve({ filter: /.*/ }, async (args) => {
+        if (vendors.includes(args.path)) {
+          const fromSrcToImporter = path.relative(
+            srcDir,
+            path.dirname(args.importer)
+          );
+
+          const importerOut = path.resolve(outDir, fromSrcToImporter);
+
+          return {
+            external: true,
+            path: path.relative(
+              importerOut,
+              path.resolve(outDir, program.vendorsDir, `${args.path}${outExt}`)
+            ),
+          };
+        }
+
         if (args.importer) {
           let importPath = args.path;
           let absImportPath = path.resolve(args.resolveDir, importPath);

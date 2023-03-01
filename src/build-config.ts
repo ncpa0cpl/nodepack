@@ -139,6 +139,11 @@ export type BuildConfig = {
    * may encounter bugs if you use it.
    */
   watch?: boolean;
+  /**
+   * List of external packages that should be compiled along with
+   * the source files.
+   */
+  compileVendors?: string[];
 };
 
 export const validateBuildConfig = (config: BuildConfig) => {
@@ -254,6 +259,7 @@ export const validateBuildConfig = (config: BuildConfig) => {
       required: false,
       type: DataType.RecordOf({}),
     },
+    compileVendors: DataType.ArrayOf(DataType.String),
   });
 
   const validate = createValidatedFunction(

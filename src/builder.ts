@@ -3,6 +3,7 @@ import path from "path";
 import type { ProgramContext } from "./program";
 import { changeExt } from "./utilities/change-ext";
 import { ESbuildPlugin } from "./utilities/esbuild-plugin";
+import { VendorBuilderPlugin } from "./utilities/vendor-builder-plugin";
 
 export class Builder {
   private cjsBuildDir: string;
@@ -17,6 +18,43 @@ export class Builder {
     this.cjsBuildDir = path.resolve(outDir, "cjs");
     this.esmBuildDir = path.resolve(outDir, "esm");
     this.legacyBuildDir = path.resolve(outDir, "legacy");
+  }
+
+  private getVendorProxyFilePath(format: esbuild.BuildOptions["format"]) {
+    switch (format) {
+      case "esm":
+        return path.resolve(__dirname, "../../vendor-proxy.mjs");
+      default:
+        return path.resolve(__dirname, "../../vendor-proxy.cjs");
+    }
+  }
+
+  private async buildVendorFile(
+    vendorName: string,
+    outDir: string,
+    format: esbuild.BuildOptions["format"],
+    ext: string
+  ) {
+    const { plugins: additionalPlugins = [], ...additionalOptions } =
+      this.program.buildConfig.esbuildOptions ?? {};
+
+    const r = await esbuild.build({
+      ...additionalOptions,
+      entryPoints: [this.getVendorProxyFilePath(format)],
+      outfile: path.resolve(
+        outDir,
+        this.program.vendorsDir,
+        `${vendorName}${ext}`
+      ),
+      target: this.program.buildConfig.target,
+      tsconfig: this.program.buildConfig.tsConfig,
+      bundle: true,
+      format,
+      plugins: [...additionalPlugins, VendorBuilderPlugin(vendorName)],
+      outExtension: { ".js": ext },
+    });
+
+    return r;
   }
 
   private async buildFile(
@@ -51,7 +89,14 @@ export class Builder {
       format,
       plugins: [
         ...additionalPlugins,
-        ESbuildPlugin(this.program, extMapper, this.srcDir),
+        ESbuildPlugin({
+          program: this.program,
+          extMapper,
+          srcDir: this.srcDir,
+          outDir,
+          outExt,
+          vendors: this.program.buildConfig.compileVendors ?? [],
+        }),
       ],
       outExtension: { ".js": outExt },
     });
@@ -113,6 +158,36 @@ export class Builder {
     throw Error("Impossible scenario.");
   }
 
+  async buildVendors(format: "cjs" | "esm" | "legacy") {
+    const vendors = this.program.buildConfig.compileVendors ?? [];
+
+    if (format === "cjs") {
+      return Promise.all(
+        vendors.map((v) =>
+          this.buildVendorFile(v, this.cjsBuildDir, "cjs", ".cjs")
+        )
+      );
+    }
+
+    if (format === "esm") {
+      return Promise.all(
+        vendors.map((v) =>
+          this.buildVendorFile(v, this.esmBuildDir, "esm", ".mjs")
+        )
+      );
+    }
+
+    if (format === "legacy") {
+      return Promise.all(
+        vendors.map((v) =>
+          this.buildVendorFile(v, this.legacyBuildDir, "cjs", ".js")
+        )
+      );
+    }
+
+    throw Error("Impossible scenario.");
+  }
+
   private async watchFile(
     actualFilePath: string,
     originalFilePath: string,
@@ -145,7 +220,14 @@ export class Builder {
       format,
       plugins: [
         ...additionalPlugins,
-        ESbuildPlugin(this.program, extMapper, this.srcDir),
+        ESbuildPlugin({
+          program: this.program,
+          extMapper,
+          srcDir: this.srcDir,
+          outDir,
+          outExt,
+          vendors: this.program.buildConfig.compileVendors ?? [],
+        }),
       ],
       outExtension: { ".js": outExt },
     });

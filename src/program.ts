@@ -25,6 +25,7 @@ export type ProgramContext = {
   extMap: ExtensionMapper;
   tsProgram: ReturnType<typeof getTsWorkerPool>;
   isomorphicImports: IsomorphicImportsMapper;
+  vendorsDir: string;
 };
 
 export class Program {
@@ -42,6 +43,7 @@ export class Program {
         config.isomorphicImports ?? {},
         config.srcDir
       ),
+      vendorsDir: "_vendors",
     };
   }
 
@@ -71,19 +73,22 @@ export class Program {
     }
 
     if (this.context.formats.isCjs)
-      await Promise.all(
-        filesForCompilation.map((file) => builder.build(file, "cjs"))
-      );
+      await Promise.all([
+        ...filesForCompilation.map((file) => builder.build(file, "cjs")),
+        builder.buildVendors("cjs"),
+      ]);
 
     if (this.context.formats.isEsm)
-      await Promise.all(
-        filesForCompilation.map((file) => builder.build(file, "esm"))
-      );
+      await Promise.all([
+        ...filesForCompilation.map((file) => builder.build(file, "esm")),
+        builder.buildVendors("esm"),
+      ]);
 
     if (this.context.formats.isLegacy)
-      await Promise.all(
-        filesForCompilation.map((file) => builder.build(file, "legacy"))
-      );
+      await Promise.all([
+        ...filesForCompilation.map((file) => builder.build(file, "legacy")),
+        builder.buildVendors("legacy"),
+      ]);
   }
 
   async emitDeclarations() {
@@ -195,6 +200,18 @@ export class Program {
     };
 
     startWatchingDirectory(this.context.buildConfig.srcDir);
+
+    await Promise.all([
+      this.context.formats.isCjs
+        ? builder.buildVendors("cjs")
+        : Promise.resolve(),
+      this.context.formats.isEsm
+        ? builder.buildVendors("esm")
+        : Promise.resolve(),
+      this.context.formats.isLegacy
+        ? builder.buildVendors("legacy")
+        : Promise.resolve(),
+    ]);
 
     const filesForCompilation: string[] = [];
     for await (const [root, dirs, files] of walk(
