@@ -259,7 +259,10 @@ export const validateBuildConfig = (config: BuildConfig) => {
       required: false,
       type: DataType.RecordOf({}),
     },
-    compileVendors: DataType.ArrayOf(DataType.String),
+    compileVendors: {
+      required: false,
+      type: DataType.ArrayOf(DataType.String),
+    },
   });
 
   const validate = createValidatedFunction(
