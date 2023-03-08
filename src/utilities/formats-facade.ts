@@ -1,4 +1,4 @@
-import type { BuildConfig } from "..";
+import type { BuildConfig } from "../build-config-type";
 
 export class FormatsFacade {
   readonly isCjs: boolean;

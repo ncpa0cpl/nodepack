@@ -2,7 +2,7 @@ import type { BuildContext } from "esbuild";
 import fs from "fs";
 import { walk } from "node-os-walk";
 import path from "path";
-import type { BuildConfig } from ".";
+import type { BuildConfig } from "./build-config-type";
 import { Builder } from "./builder";
 import { DeclarationBuilder } from "./declaration-builder";
 import { DeclarationPathRewriter } from "./declaration-path-rewriter";

@@ -1,5 +1,5 @@
 import path from "path";
-import type { BuildConfig } from "../build-config";
+import type { BuildConfig } from "../build-config-type";
 
 export class IsomorphicImportsMapper {
   private isomorphicTargets = {

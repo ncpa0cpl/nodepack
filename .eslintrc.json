@@ -68,7 +68,8 @@
       {
         "types": {
           "object": false,
-          "Function": false
+          "Function": false,
+          "{}": false
         },
         "extendDefaults": true
       }

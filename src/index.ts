@@ -1,11 +1,10 @@
 import process from "node:process";
 import path from "path";
 import PrettyError from "pretty-error";
-import type { BuildConfig } from "./build-config";
 import { validateBuildConfig } from "./build-config";
+import type { BuildConfig } from "./build-config-type";
 import { Program } from "./program";
 import { ensureAbsolutePath } from "./utilities/ensure-absolute-path";
-export type { BuildConfig, NodePackScriptTarget } from "./build-config";
 
 export async function build(config: BuildConfig) {
   let program: Program | undefined = undefined;
@@ -68,3 +67,5 @@ export async function build(config: BuildConfig) {
     program?.close();
   }
 }
+
+export * from "./build-config-type";
