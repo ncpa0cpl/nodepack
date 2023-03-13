@@ -624,10 +624,10 @@ diff@^5.0.0:
   resolved "https://registry.yarnpkg.com/diff/-/diff-5.1.0.tgz#bc52d298c5ea8df9194800224445ed43ffc87e40"
   integrity sha512-D+mk+qE8VC/PAUrlAU34N+VfXev0ghe5ywmpqrawphmVZc1bEfn56uo9qpyGp1p4xpzOHkSW4ztBd6L7Xx4ACw==
 
-dilswer@2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/dilswer/-/dilswer-2.0.0.tgz#7098e4b448adc16dce6ffc08a9b9daf29b6f4418"
-  integrity sha512-R0a9iDAE3Yt4EtMVj6sk4cTULsrfQtKJhupRp+hooarb7b6Q6/Ba9P5jxuanzT1PTXkQ+JrZ/XqnciiJzXlxwQ==
+dilswer@2.0.2:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/dilswer/-/dilswer-2.0.2.tgz#c9b22e1f3e11eb69cbc446510e91fc959b24934e"
+  integrity sha512-Sv4GdHhkvtwrND1Gc2VJMeBRqmSQea05XxRmJubOpKBk8E8V/8tRNCJSCsV4O6EVThovSjYivqYuD6cwhABktw==
   dependencies:
     "@types/json-schema" "^7.0.11"
 
