@@ -52,6 +52,11 @@ async function main() {
         mjs: "./workers/get-workers-dir/get-workers-dir.mjs.ts",
         js: "./workers/get-workers-dir/get-workers-dir.js.ts",
       },
+      "./get-nodepack-dir/get-nodepack-dir.ts": {
+        js: "./get-nodepack-dir/get-nodepack-dir.cjs.ts",
+        cjs: "./get-nodepack-dir/get-nodepack-dir.cjs.ts",
+        mjs: "./get-nodepack-dir/get-nodepack-dir.mjs.ts",
+      },
     },
   });
 

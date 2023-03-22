@@ -1,5 +1,6 @@
 import esbuild from "esbuild";
 import path from "path";
+import { nodepackDir } from "./get-nodepack-dir/get-nodepack-dir";
 import type { ProgramContext } from "./program";
 import { changeExt } from "./utilities/change-ext";
 import { ESbuildPlugin } from "./utilities/esbuild-plugin";
@@ -23,9 +24,9 @@ export class Builder {
   private getVendorProxyFilePath(format: esbuild.BuildOptions["format"]) {
     switch (format) {
       case "esm":
-        return path.resolve(__dirname, "../../vendor-proxy.mjs");
+        return path.resolve(nodepackDir, "vendor-proxy.mjs");
       default:
-        return path.resolve(__dirname, "../../vendor-proxy.cjs");
+        return path.resolve(nodepackDir, "vendor-proxy.cjs");
     }
   }
 
