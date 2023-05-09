@@ -45,10 +45,16 @@ export const ESbuildPlugin = (params: {
 
           return {
             external: true,
-            path: path.relative(
-              importerOut,
-              path.resolve(outDir, program.vendorsDir, `${args.path}${outExt}`)
-            ),
+            path:
+              "./" +
+              path.relative(
+                importerOut,
+                path.resolve(
+                  outDir,
+                  program.vendorsDir,
+                  `${args.path}${outExt}`
+                )
+              ),
           };
         }
 
