@@ -80,6 +80,8 @@ export const buildConfigSchema = Type.RecordOf({
   pathAliases: OptionalField(TypePathAliasMap),
   decoratorsMetadata: OptionalField(Type.Boolean),
   watch: OptionalField(Type.Boolean),
+  external: OptionalField(Type.ArrayOf(Type.String)),
+  replaceImports: OptionalField(Type.Dict(Type.String)),
   isomorphicImports: OptionalField(
     Type.AllOf(
       TypeRecordWithRelativePathsAsKeys,
@@ -230,6 +232,20 @@ on the file system and rebuild whenever a file changes.
 This option is currently experimental and you may encounter bugs if you use it.
 `.trim()
 );
+
+buildConfigSchema.recordOf.external.type
+  .setTitle("ExternalPackages")
+  .setDescription(
+    "List of packages that should not be excluded from compilation. " +
+      "Imports of those packages will be left as is, unless `replaceImports` " +
+      "for that package is specified."
+  );
+
+buildConfigSchema.recordOf.replaceImports.type
+  .setTitle("ReplaceImportsMap")
+  .setDescription(
+    "A map of import paths/packages that should be replaced with another import."
+  );
 
 export const validateBuildConfig = (config: BuildConfig) => {
   const validate = createValidatedFunction(

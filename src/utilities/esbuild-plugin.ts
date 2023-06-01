@@ -20,10 +20,18 @@ export const ESbuildPlugin = (params: {
   extMapper: ExtensionMapper;
   srcDir: string;
   outDir: string;
+  outfile: string;
   outExt: string;
-  vendors: string[];
 }) => {
-  const { extMapper, outDir, program, srcDir, vendors, outExt } = params;
+  const { extMapper, outDir, program, srcDir, outfile, outExt } = params;
+  const vendors = new Set(program.buildConfig.compileVendors ?? []);
+  const additionalExternal = program.buildConfig.esbuildOptions?.external ?? [];
+  const external = new Set(
+    (program.buildConfig.external ?? []).concat(additionalExternal)
+  );
+  const importReplace = new Map(
+    Object.entries(program.buildConfig.replaceImports ?? {})
+  );
 
   const {
     pathAliases,
@@ -35,26 +43,42 @@ export const ESbuildPlugin = (params: {
     name: "nodepack-esbuild-plugin",
     setup(build: esbuild.PluginBuild) {
       build.onResolve({ filter: /.*/ }, async (args) => {
-        if (vendors.includes(args.path)) {
-          const fromSrcToImporter = path.relative(
-            srcDir,
-            path.dirname(args.importer)
-          );
+        const originalPath = args.path;
+        args = { ...args };
 
-          const importerOut = path.resolve(outDir, fromSrcToImporter);
+        const replaceWith = importReplace.get(args.path);
+        if (replaceWith) {
+          if (replaceWith.startsWith(".")) {
+            const fromImporterToReplacement = path.relative(
+              path.dirname(outfile),
+              path.resolve(srcDir, replaceWith)
+            );
+            args.path = fromImporterToReplacement;
+          } else {
+            args.path = replaceWith;
+          }
+        }
 
+        if (external.has(originalPath)) {
           return {
             external: true,
-            path:
-              "./" +
+            path: args.path,
+          };
+        }
+
+        if (vendors.has(args.path)) {
+          return {
+            external: true,
+            path: asRelative(
               path.relative(
-                importerOut,
+                path.dirname(outfile),
                 path.resolve(
                   outDir,
                   program.vendorsDir,
                   `${args.path}${outExt}`
                 )
-              ),
+              )
+            ),
           };
         }
 
@@ -99,11 +123,12 @@ export const ESbuildPlugin = (params: {
                 external: true,
               };
             }
-          } else
+          } else {
             return {
               path: args.path,
               external: true,
             };
+          }
         }
       });
 

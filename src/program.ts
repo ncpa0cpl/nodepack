@@ -154,7 +154,7 @@ export class Program {
 
     const startWatchingDirectory = (dir: string) => {
       fs.watch(dir, {}, async (eventType, filename) => {
-        if (eventType === "rename") {
+        if (eventType === "rename" && filename != null) {
           console.log("file rename detected", filename);
 
           const filepath = path.resolve(dir, filename);
