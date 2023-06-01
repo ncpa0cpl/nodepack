@@ -1,25 +1,30 @@
 import type esbuild from "esbuild";
 import path from "path";
 import type { ProgramContext } from "../program";
+import type { VendorBuilder } from "../vendor-builder";
 import { asRelative } from "./as-relative";
 
 export const VendorBuilderPlugin = (params: {
   program: ProgramContext;
+  vendorBuilder: VendorBuilder;
   vendor: string;
   srcDir: string;
   outfile: string;
   outExt: string;
 }): esbuild.Plugin => {
-  const { program, vendor, outfile, srcDir, outExt } = params;
+  const { vendorBuilder, program, vendor, outfile, srcDir, outExt } = params;
 
-  const vendors = new Set(program.buildConfig.compileVendors ?? []);
-  const additionalExternal = program.buildConfig.esbuildOptions?.external ?? [];
-  const external = new Set(
-    (program.buildConfig.external ?? []).concat(additionalExternal)
-  );
+  const vendors = program.config.get("compileVendors");
   const importReplace = new Map(
-    Object.entries(program.buildConfig.replaceImports ?? {})
+    Object.entries(program.config.get("replaceImports") ?? {})
   );
+
+  const onVendorFound =
+    vendors === "all"
+      ? (vendor: string) => {
+          vendorBuilder.addVendors([vendor]);
+        }
+      : (_: string) => {};
 
   return {
     name: "nodepack-vendor-builder-plugin",
@@ -54,14 +59,15 @@ export const VendorBuilderPlugin = (params: {
           }
         }
 
-        if (external.has(originalPath)) {
+        if (program.config.isExternal(originalPath)) {
           return {
             external: true,
             path: args.path,
           };
         }
 
-        if (vendors.has(args.path)) {
+        if (program.config.isVendor(args.path)) {
+          onVendorFound(args.path);
           return {
             external: true,
             path: asRelative(`${args.path}${outExt}`),

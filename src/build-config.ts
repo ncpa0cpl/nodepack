@@ -82,7 +82,7 @@ export const buildConfigSchema = Type.RecordOf({
   pathAliases: OptionalField(TypePathAliasMap),
   decoratorsMetadata: OptionalField(Type.Boolean),
   watch: OptionalField(Type.Boolean),
-  external: OptionalField(Type.ArrayOf(Type.String)),
+  external: OptionalField(Type.ArrayOf(Type.String, Type.InstanceOf(RegExp))),
   replaceImports: OptionalField(Type.Dict(Type.String)),
   isomorphicImports: OptionalField(
     Type.AllOf(
@@ -97,7 +97,16 @@ export const buildConfigSchema = Type.RecordOf({
     )
   ),
   esbuildOptions: OptionalField(TypeEsbuildOptions),
-  compileVendors: OptionalField(Type.ArrayOf(Type.String)),
+  compileVendors: OptionalField(
+    Type.OneOf(Type.Literal("all"), Type.ArrayOf(Type.String))
+  ),
+  preset: OptionalField(
+    Type.RecordOf({
+      node: OptionalField(Type.Boolean),
+      deno: OptionalField(Type.Boolean),
+      gjs: OptionalField(Type.Boolean),
+    })
+  ),
 });
 
 buildConfigSchema.setTitle("BuildConfig");
@@ -166,6 +175,8 @@ List of external packages that should be compiled along with the source files.
 
 Each specified vendor package will be compiled into a single bundle file and
 placed inside a \`_vendors\` directory.
+
+If set to \`all\`, all external packages will be compiled.
     `.trim()
   );
 
@@ -255,6 +266,10 @@ When enabled, the entire program will be bundled into a single file,
 with the exception of files and packages marked as external or as vendors.
 
 \`entrypoint\` option must be provided when \`bundle\` is enabled.`
+);
+
+buildConfigSchema.recordOf.preset.type.recordOf.node.type.setDescription(
+  "When enabled all the packages provided by the Node environment will be added to the `external` array."
 );
 
 export const validateBuildConfig = (config: BuildConfig) => {
