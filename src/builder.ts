@@ -1,15 +1,15 @@
 import esbuild from "esbuild";
 import path from "path";
-import { nodepackDir } from "./get-nodepack-dir/get-nodepack-dir";
 import type { ProgramContext } from "./program";
 import { changeExt } from "./utilities/change-ext";
 import { ESbuildPlugin } from "./utilities/esbuild-plugin";
-import { VendorBuilderPlugin } from "./utilities/vendor-builder-plugin";
+import { VendorBuilder } from "./vendor-builder";
 
 export class Builder {
   private cjsBuildDir: string;
   private esmBuildDir: string;
   private legacyBuildDir: string;
+  public vendorBuilder: VendorBuilder;
 
   constructor(
     private program: ProgramContext,
@@ -19,54 +19,7 @@ export class Builder {
     this.cjsBuildDir = path.resolve(outDir, "cjs");
     this.esmBuildDir = path.resolve(outDir, "esm");
     this.legacyBuildDir = path.resolve(outDir, "legacy");
-  }
-
-  private getVendorProxyFilePath(format: esbuild.BuildOptions["format"]) {
-    switch (format) {
-      case "esm":
-        return path.resolve(nodepackDir, "vendor-proxy.mjs");
-      default:
-        return path.resolve(nodepackDir, "vendor-proxy.cjs");
-    }
-  }
-
-  private async buildVendorFile(
-    vendorName: string,
-    outDir: string,
-    format: esbuild.BuildOptions["format"],
-    ext: string
-  ) {
-    const { plugins: additionalPlugins = [], ...additionalOptions } =
-      this.program.buildConfig.esbuildOptions ?? {};
-
-    const outpath = path.resolve(
-      outDir,
-      this.program.vendorsDir,
-      `${vendorName}${ext}`
-    );
-
-    const r = await esbuild.build({
-      ...additionalOptions,
-      entryPoints: [this.getVendorProxyFilePath(format)],
-      outfile: outpath,
-      target: this.program.buildConfig.target,
-      tsconfig: this.program.buildConfig.tsConfig,
-      bundle: true,
-      format,
-      plugins: [
-        ...additionalPlugins,
-        VendorBuilderPlugin({
-          program: this.program,
-          vendor: vendorName,
-          srcDir: this.srcDir,
-          outfile: outpath,
-          outExt: ext,
-        }),
-      ],
-      outExtension: { ".js": ext },
-    });
-
-    return r;
+    this.vendorBuilder = new VendorBuilder(program, srcDir, outDir);
   }
 
   private async buildFile(
@@ -81,7 +34,7 @@ export class Builder {
       plugins: additionalPlugins = [],
       external: _,
       ...additionalOptions
-    } = this.program.buildConfig.esbuildOptions ?? {};
+    } = this.program.config.get("esbuildOptions", {});
 
     const outFilePath = path.join(
       outDir,
@@ -101,14 +54,15 @@ export class Builder {
       ...additionalOptions,
       entryPoints: [actualFilePath],
       outfile,
-      target: this.program.buildConfig.target,
-      tsconfig: this.program.buildConfig.tsConfig,
+      target: this.program.config.get("target"),
+      tsconfig: this.program.config.get("tsConfig"),
       bundle: true,
       format,
       plugins: [
         ...additionalPlugins,
         ESbuildPlugin({
           program: this.program,
+          vendorBuilder: this.vendorBuilder,
           extMapper,
           srcDir: this.srcDir,
           outDir,
@@ -216,36 +170,6 @@ export class Builder {
     throw Error("Impossible scenario.");
   }
 
-  async buildVendors(format: "cjs" | "esm" | "legacy") {
-    const vendors = this.program.buildConfig.compileVendors ?? [];
-
-    if (format === "cjs") {
-      return Promise.all(
-        vendors.map((v) =>
-          this.buildVendorFile(v, this.cjsBuildDir, "cjs", ".cjs")
-        )
-      );
-    }
-
-    if (format === "esm") {
-      return Promise.all(
-        vendors.map((v) =>
-          this.buildVendorFile(v, this.esmBuildDir, "esm", ".mjs")
-        )
-      );
-    }
-
-    if (format === "legacy") {
-      return Promise.all(
-        vendors.map((v) =>
-          this.buildVendorFile(v, this.legacyBuildDir, "cjs", ".js")
-        )
-      );
-    }
-
-    throw Error("Impossible scenario.");
-  }
-
   private async watchFile(
     actualFilePath: string,
     originalFilePath: string,
@@ -254,7 +178,7 @@ export class Builder {
     ext: string
   ) {
     const { plugins: additionalPlugins = [], ...additionalOptions } =
-      this.program.buildConfig.esbuildOptions ?? {};
+      this.program.config.get("esbuildOptions", {});
 
     const outFilePath = path.join(
       outDir,
@@ -274,14 +198,15 @@ export class Builder {
       ...additionalOptions,
       entryPoints: [actualFilePath],
       outfile,
-      target: this.program.buildConfig.target,
-      tsconfig: this.program.buildConfig.tsConfig,
+      target: this.program.config.get("target"),
+      tsconfig: this.program.config.get("tsConfig"),
       bundle: true,
       format,
       plugins: [
         ...additionalPlugins,
         ESbuildPlugin({
           program: this.program,
+          vendorBuilder: this.vendorBuilder,
           extMapper,
           srcDir: this.srcDir,
           outDir,

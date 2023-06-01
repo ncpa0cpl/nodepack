@@ -25,8 +25,8 @@ export class DeclarationBuilder {
       outDir: this.outDir,
     };
 
-    if (this.program.buildConfig.target) {
-      options.target = mapCompilerTarget(this.program.buildConfig.target);
+    if (this.program.config.get("target")) {
+      options.target = mapCompilerTarget(this.program.config.get("target"));
     }
 
     return options;

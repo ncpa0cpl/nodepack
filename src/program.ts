@@ -6,6 +6,7 @@ import type { BuildConfig } from "./build-config-type";
 import { Builder } from "./builder";
 import { DeclarationBuilder } from "./declaration-builder";
 import { DeclarationPathRewriter } from "./declaration-path-rewriter";
+import { ConfigHelper } from "./utilities/config-helper";
 import { ExcludeFacade } from "./utilities/exclude-facade";
 import { ExtensionMapper } from "./utilities/extension-mapper";
 import { FormatsFacade } from "./utilities/formats-facade";
@@ -18,7 +19,7 @@ import { PathAliasResolver } from "./utilities/path-alias-resolver";
 import { getTsWorkerPool } from "./workers";
 
 export type ProgramContext = {
-  buildConfig: BuildConfig;
+  config: ConfigHelper;
   pathAliases: PathAliasResolver;
   excludes: ExcludeFacade;
   formats: FormatsFacade;
@@ -33,7 +34,7 @@ export class Program {
 
   constructor(config: BuildConfig) {
     this.context = {
-      buildConfig: config,
+      config: new ConfigHelper(config),
       pathAliases: new PathAliasResolver(config.pathAliases),
       excludes: new ExcludeFacade(config.exclude ?? []),
       formats: new FormatsFacade(config.formats ?? []),
@@ -47,16 +48,43 @@ export class Program {
     };
   }
 
-  async transpileSource() {
-    const builder = new Builder(
-      this.context,
-      this.context.buildConfig.srcDir,
-      this.context.buildConfig.outDir
+  private async bundle(builder: Builder) {
+    if (typeof this.context.config.get("entrypoint") !== "string") {
+      throw new Error(
+        "`entrypoint` must be provided when bundling is enabled."
+      );
+    }
+
+    const entrypointPath = path.resolve(
+      this.context.config.get("srcDir"),
+      this.context.config.get("entrypoint")!
     );
 
+    if (this.context.formats.isCjs) {
+      await builder.bundle(entrypointPath, "cjs");
+    }
+
+    if (this.context.formats.isEsm) {
+      await builder.bundle(entrypointPath, "esm");
+    }
+
+    if (this.context.formats.isLegacy) {
+      await builder.bundle(entrypointPath, "legacy");
+    }
+
+    const vendors = this.context.config.get("compileVendors");
+    if (Array.isArray(vendors)) {
+      builder.vendorBuilder.addVendors(vendors);
+    }
+
+    await builder.vendorBuilder.flush();
+  }
+
+  private async buildFiles(builder: Builder) {
     const filesForCompilation: string[] = [];
+
     for await (const [root, _, files] of walk(
-      this.context.buildConfig.srcDir
+      this.context.config.get("srcDir")
     )) {
       for (const file of files) {
         const filePath = path.join(root, file.name);
@@ -72,66 +100,56 @@ export class Program {
       }
     }
 
-    if (this.context.buildConfig.bundle) {
-      if (typeof this.context.buildConfig.entrypoint !== "string") {
-        throw new Error(
-          "`entrypoint` must be provided when bundling is enabled."
-        );
-      }
-
-      const entrypointPath = path.resolve(
-        this.context.buildConfig.srcDir,
-        this.context.buildConfig.entrypoint
+    if (this.context.formats.isCjs) {
+      await Promise.all(
+        filesForCompilation.map((file) => builder.build(file, "cjs"))
       );
+    }
 
-      if (this.context.formats.isCjs)
-        await Promise.all([
-          builder.bundle(entrypointPath, "cjs"),
-          builder.buildVendors("cjs"),
-        ]);
+    if (this.context.formats.isEsm) {
+      await Promise.all(
+        filesForCompilation.map((file) => builder.build(file, "esm"))
+      );
+    }
 
-      if (this.context.formats.isEsm)
-        await Promise.all([
-          builder.bundle(entrypointPath, "esm"),
-          builder.buildVendors("esm"),
-        ]);
+    if (this.context.formats.isLegacy) {
+      await Promise.all(
+        filesForCompilation.map((file) => builder.build(file, "legacy"))
+      );
+    }
 
-      if (this.context.formats.isLegacy)
-        await Promise.all([
-          builder.bundle(entrypointPath, "legacy"),
-          builder.buildVendors("legacy"),
-        ]);
+    const vendors = this.context.config.get("compileVendors");
+    if (Array.isArray(vendors)) {
+      builder.vendorBuilder.addVendors(vendors);
+    }
+
+    await builder.vendorBuilder.flush();
+  }
+
+  async transpileSource() {
+    const builder = new Builder(
+      this.context,
+      this.context.config.get("srcDir"),
+      this.context.config.get("outDir")
+    );
+
+    if (this.context.config.get("bundle")) {
+      await this.bundle(builder);
     } else {
-      if (this.context.formats.isCjs)
-        await Promise.all([
-          ...filesForCompilation.map((file) => builder.build(file, "cjs")),
-          builder.buildVendors("cjs"),
-        ]);
-
-      if (this.context.formats.isEsm)
-        await Promise.all([
-          ...filesForCompilation.map((file) => builder.build(file, "esm")),
-          builder.buildVendors("esm"),
-        ]);
-
-      if (this.context.formats.isLegacy)
-        await Promise.all([
-          ...filesForCompilation.map((file) => builder.build(file, "legacy")),
-          builder.buildVendors("legacy"),
-        ]);
+      await this.buildFiles(builder);
     }
   }
 
   async emitDeclarations() {
     const declarationBuilder = new DeclarationBuilder(
       this.context,
-      this.context.buildConfig.srcDir,
-      this.context.buildConfig.outDir
+      this.context.config.get("srcDir"),
+      this.context.config.get("outDir")
     );
 
     await declarationBuilder.build();
 
-    if (this.context.buildConfig.pathAliases) {
+    if (this.context.config.get("pathAliases")) {
       const declarationPathRewriter = new DeclarationPathRewriter(
         this.context,
         declarationBuilder.getOutDir()
@@ -146,8 +164,8 @@ export class Program {
 
     const builder = new Builder(
       this.context,
-      this.context.buildConfig.srcDir,
-      this.context.buildConfig.outDir
+      this.context.config.get("srcDir"),
+      this.context.config.get("outDir")
     );
 
     const watched = new Map<string, BuildContext[]>();
@@ -230,23 +248,16 @@ export class Program {
       }
     };
 
-    startWatchingDirectory(this.context.buildConfig.srcDir);
+    startWatchingDirectory(this.context.config.get("srcDir"));
 
-    await Promise.all([
-      this.context.formats.isCjs
-        ? builder.buildVendors("cjs")
-        : Promise.resolve(),
-      this.context.formats.isEsm
-        ? builder.buildVendors("esm")
-        : Promise.resolve(),
-      this.context.formats.isLegacy
-        ? builder.buildVendors("legacy")
-        : Promise.resolve(),
-    ]);
+    const vendors = this.context.config.get("compileVendors");
+    if (Array.isArray(vendors)) {
+      builder.vendorBuilder.addVendors(vendors);
+    }
 
     const filesForCompilation: string[] = [];
     for await (const [root, dirs, files] of walk(
-      this.context.buildConfig.srcDir
+      this.context.config.get("srcDir")
     )) {
       for (const file of files) {
         const filePath = path.join(root, file.name);

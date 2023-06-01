@@ -2,6 +2,7 @@ import type esbuild from "esbuild";
 import fs from "fs/promises";
 import path from "path";
 import type { ProgramContext } from "../program";
+import type { VendorBuilder } from "../vendor-builder";
 import { asRelative } from "./as-relative";
 import { changeExt } from "./change-ext";
 import type { ExtensionMapper } from "./extension-mapper";
@@ -39,6 +40,7 @@ const filesCache = new CacheMap<{
 
 export const ESbuildPlugin = (params: {
   program: ProgramContext;
+  vendorBuilder: VendorBuilder;
   extMapper: ExtensionMapper;
   srcDir: string;
   outDir: string;
@@ -46,22 +48,30 @@ export const ESbuildPlugin = (params: {
   outExt: string;
   bundle: boolean;
 }) => {
-  const { extMapper, outDir, program, srcDir, outfile, outExt, bundle } =
-    params;
-  const vendors = new Set(program.buildConfig.compileVendors ?? []);
-  const additionalExternal = program.buildConfig.esbuildOptions?.external ?? [];
-  const external = new Set(
-    (program.buildConfig.external ?? []).concat(additionalExternal)
-  );
+  const {
+    vendorBuilder,
+    extMapper,
+    outDir,
+    program,
+    srcDir,
+    outfile,
+    outExt,
+    bundle,
+  } = params;
+
+  const vendors = program.config.get("compileVendors");
   const importReplace = new Map(
-    Object.entries(program.buildConfig.replaceImports ?? {})
+    Object.entries(program.config.get("replaceImports") ?? {})
   );
 
-  const {
-    pathAliases,
-    tsProgram,
-    buildConfig: { decoratorsMetadata = false },
-  } = program;
+  const { pathAliases, tsProgram, config: buildConfig } = program;
+
+  const onVendorFound =
+    vendors === "all"
+      ? (vendor: string) => {
+          vendorBuilder.addVendors([vendor]);
+        }
+      : (_: string) => {};
 
   return {
     name: "nodepack-esbuild-plugin",
@@ -83,14 +93,15 @@ export const ESbuildPlugin = (params: {
           }
         }
 
-        if (external.has(originalPath)) {
+        if (program.config.isExternal(originalPath)) {
           return {
             external: true,
             path: args.path,
           };
         }
 
-        if (vendors.has(args.path)) {
+        if (program.config.isVendor(args.path)) {
+          onVendorFound(args.path);
           return {
             external: true,
             path: asRelative(
@@ -203,7 +214,7 @@ export const ESbuildPlugin = (params: {
         }
       });
 
-      if (decoratorsMetadata) {
+      if (buildConfig.get("decoratorsMetadata", false)) {
         const decoratorRegex =
           /class.*?{.*?@[a-zA-Z0-9]+?(\(.*?\)){0,1}[\s\n]+?[a-zA-Z0-9]+?.+?;/ms;
         const hasDecorators = (fileContent: string) =>
