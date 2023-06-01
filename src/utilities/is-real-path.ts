@@ -4,7 +4,7 @@ import { CacheMap } from "./info-cache";
 
 const resultCache = new CacheMap<boolean>();
 
-export const isRealPath = async (path: string) => {
+export const fileExists = async (path: string) => {
   const cachedResult = resultCache.get(path);
   if (cachedResult !== undefined) {
     return cachedResult;

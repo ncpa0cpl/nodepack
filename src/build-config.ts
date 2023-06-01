@@ -71,6 +71,8 @@ export const buildConfigSchema = Type.RecordOf({
       Type.Literal("legacy")
     )
   ),
+  entrypoint: OptionalField(Type.String),
+  bundle: OptionalField(Type.Boolean),
   tsConfig: OptionalField(Type.String),
   declarations: OptionalField(Type.OneOf(Type.Boolean, Type.Literal("only"))),
   exclude: OptionalField(
@@ -246,6 +248,14 @@ buildConfigSchema.recordOf.replaceImports.type
   .setDescription(
     "A map of import paths/packages that should be replaced with another import."
   );
+
+buildConfigSchema.recordOf.bundle.type.setDescription(
+  `
+When enabled, the entire program will be bundled into a single file, 
+with the exception of files and packages marked as external or as vendors.
+
+\`entrypoint\` option must be provided when \`bundle\` is enabled.`
+);
 
 export const validateBuildConfig = (config: BuildConfig) => {
   const validate = createValidatedFunction(

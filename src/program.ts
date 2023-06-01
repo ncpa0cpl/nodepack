@@ -12,7 +12,7 @@ import { FormatsFacade } from "./utilities/formats-facade";
 import { CacheMap } from "./utilities/info-cache";
 import { isDirectory } from "./utilities/is-directory";
 import { isParsable } from "./utilities/is-parsable";
-import { isRealPath } from "./utilities/is-real-path";
+import { fileExists } from "./utilities/is-real-path";
 import { IsomorphicImportsMapper } from "./utilities/isomorphic-imports-mapper";
 import { PathAliasResolver } from "./utilities/path-alias-resolver";
 import { getTsWorkerPool } from "./workers";
@@ -72,23 +72,54 @@ export class Program {
       }
     }
 
-    if (this.context.formats.isCjs)
-      await Promise.all([
-        ...filesForCompilation.map((file) => builder.build(file, "cjs")),
-        builder.buildVendors("cjs"),
-      ]);
+    if (this.context.buildConfig.bundle) {
+      if (typeof this.context.buildConfig.entrypoint !== "string") {
+        throw new Error(
+          "`entrypoint` must be provided when bundling is enabled."
+        );
+      }
 
-    if (this.context.formats.isEsm)
-      await Promise.all([
-        ...filesForCompilation.map((file) => builder.build(file, "esm")),
-        builder.buildVendors("esm"),
-      ]);
+      const entrypointPath = path.resolve(
+        this.context.buildConfig.srcDir,
+        this.context.buildConfig.entrypoint
+      );
 
-    if (this.context.formats.isLegacy)
-      await Promise.all([
-        ...filesForCompilation.map((file) => builder.build(file, "legacy")),
-        builder.buildVendors("legacy"),
-      ]);
+      if (this.context.formats.isCjs)
+        await Promise.all([
+          builder.bundle(entrypointPath, "cjs"),
+          builder.buildVendors("cjs"),
+        ]);
+
+      if (this.context.formats.isEsm)
+        await Promise.all([
+          builder.bundle(entrypointPath, "esm"),
+          builder.buildVendors("esm"),
+        ]);
+
+      if (this.context.formats.isLegacy)
+        await Promise.all([
+          builder.bundle(entrypointPath, "legacy"),
+          builder.buildVendors("legacy"),
+        ]);
+    } else {
+      if (this.context.formats.isCjs)
+        await Promise.all([
+          ...filesForCompilation.map((file) => builder.build(file, "cjs")),
+          builder.buildVendors("cjs"),
+        ]);
+
+      if (this.context.formats.isEsm)
+        await Promise.all([
+          ...filesForCompilation.map((file) => builder.build(file, "esm")),
+          builder.buildVendors("esm"),
+        ]);
+
+      if (this.context.formats.isLegacy)
+        await Promise.all([
+          ...filesForCompilation.map((file) => builder.build(file, "legacy")),
+          builder.buildVendors("legacy"),
+        ]);
+    }
   }
 
   async emitDeclarations() {
@@ -122,7 +153,7 @@ export class Program {
     const watched = new Map<string, BuildContext[]>();
 
     const startWatchingSourceFile = async (file: string) => {
-      if (await isRealPath(file)) {
+      if (await fileExists(file)) {
         const awaiters: Promise<any>[] = [];
         const ctxs: BuildContext[] = [];
 
