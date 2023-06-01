@@ -39,19 +39,30 @@ export class Builder {
     const { plugins: additionalPlugins = [], ...additionalOptions } =
       this.program.buildConfig.esbuildOptions ?? {};
 
+    const outpath = path.resolve(
+      outDir,
+      this.program.vendorsDir,
+      `${vendorName}${ext}`
+    );
+
     const r = await esbuild.build({
       ...additionalOptions,
       entryPoints: [this.getVendorProxyFilePath(format)],
-      outfile: path.resolve(
-        outDir,
-        this.program.vendorsDir,
-        `${vendorName}${ext}`
-      ),
+      outfile: outpath,
       target: this.program.buildConfig.target,
       tsconfig: this.program.buildConfig.tsConfig,
       bundle: true,
       format,
-      plugins: [...additionalPlugins, VendorBuilderPlugin(vendorName)],
+      plugins: [
+        ...additionalPlugins,
+        VendorBuilderPlugin({
+          program: this.program,
+          vendor: vendorName,
+          srcDir: this.srcDir,
+          outfile: outpath,
+          outExt: ext,
+        }),
+      ],
       outExtension: { ".js": ext },
     });
 
@@ -65,8 +76,11 @@ export class Builder {
     format: esbuild.BuildOptions["format"],
     ext: string
   ) {
-    const { plugins: additionalPlugins = [], ...additionalOptions } =
-      this.program.buildConfig.esbuildOptions ?? {};
+    const {
+      plugins: additionalPlugins = [],
+      external: _,
+      ...additionalOptions
+    } = this.program.buildConfig.esbuildOptions ?? {};
 
     const outFilePath = path.join(
       outDir,
@@ -80,10 +94,12 @@ export class Builder {
       ? extMapper.map(inputExt)
       : ext;
 
+    const outfile = changeExt(outFilePath, outExt);
+
     const r = await esbuild.build({
       ...additionalOptions,
       entryPoints: [actualFilePath],
-      outfile: changeExt(outFilePath, outExt),
+      outfile,
       target: this.program.buildConfig.target,
       tsconfig: this.program.buildConfig.tsConfig,
       bundle: true,
@@ -95,8 +111,8 @@ export class Builder {
           extMapper,
           srcDir: this.srcDir,
           outDir,
+          outfile,
           outExt,
-          vendors: this.program.buildConfig.compileVendors ?? [],
         }),
       ],
       outExtension: { ".js": outExt },
@@ -211,10 +227,12 @@ export class Builder {
       ? extMapper.map(inputExt)
       : ext;
 
+    const outfile = changeExt(outFilePath, outExt);
+
     const buildContext = await esbuild.context({
       ...additionalOptions,
       entryPoints: [actualFilePath],
-      outfile: changeExt(outFilePath, outExt),
+      outfile,
       target: this.program.buildConfig.target,
       tsconfig: this.program.buildConfig.tsConfig,
       bundle: true,
@@ -226,8 +244,8 @@ export class Builder {
           extMapper,
           srcDir: this.srcDir,
           outDir,
+          outfile,
           outExt,
-          vendors: this.program.buildConfig.compileVendors ?? [],
         }),
       ],
       outExtension: { ".js": outExt },
