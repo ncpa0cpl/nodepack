@@ -7,7 +7,29 @@ import { changeExt } from "./change-ext";
 import type { ExtensionMapper } from "./extension-mapper";
 import { CacheMap } from "./info-cache";
 import { isDirectory } from "./is-directory";
-import { isRealPath } from "./is-real-path";
+import { fileExists } from "./is-real-path";
+
+const hasExtension = (filepath: string) => path.extname(filepath) !== "";
+
+const withExt = async (filepath: string) => {
+  const withTsExt = `${filepath}.ts`;
+  if (await fileExists(withTsExt)) return withTsExt;
+
+  const withMtsExt = `${filepath}.mts`;
+  if (await fileExists(withMtsExt)) return withMtsExt;
+
+  const withCtsExt = `${filepath}.cts`;
+  if (await fileExists(withCtsExt)) return withCtsExt;
+
+  const withJsExt = `${filepath}.js`;
+  if (await fileExists(withJsExt)) return withJsExt;
+
+  const withMjsExt = `${filepath}.mjs`;
+  if (await fileExists(withMjsExt)) return withMjsExt;
+
+  const withCjsExt = `${filepath}.cjs`;
+  if (await fileExists(withCjsExt)) return withCjsExt;
+};
 
 const filesCache = new CacheMap<{
   hasDecorators: boolean;
@@ -22,8 +44,10 @@ export const ESbuildPlugin = (params: {
   outDir: string;
   outfile: string;
   outExt: string;
+  bundle: boolean;
 }) => {
-  const { extMapper, outDir, program, srcDir, outfile, outExt } = params;
+  const { extMapper, outDir, program, srcDir, outfile, outExt, bundle } =
+    params;
   const vendors = new Set(program.buildConfig.compileVendors ?? []);
   const additionalExternal = program.buildConfig.esbuildOptions?.external ?? [];
   const external = new Set(
@@ -98,32 +122,79 @@ export const ESbuildPlugin = (params: {
           }
 
           if (importPath.startsWith(".")) {
-            const importExt = (await isRealPath(absImportPath))
+            const importExt = (await fileExists(absImportPath))
               ? path.extname(importPath).toLowerCase()
               : "";
 
             if (importExt === "") {
+              // scenario: import is a filepath, but has no extension
+
               if (await isDirectory(absImportPath)) {
-                let p = importPath;
-                if (p.endsWith("/")) {
-                  p = p.slice(0, -1);
+                // If the import path points to a directory,
+                // rewrite the path to the index file inside
+                // that directory. So for example:
+                // "./src/Common" gets rewritten to "./src/Common/index.ts"
+
+                if (bundle) {
+                  const files = await fs.readdir(absImportPath);
+                  const indexFile = files.find((f) =>
+                    /^index\.[mc]?(js|ts)$/.test(f)
+                  );
+
+                  if (!indexFile) {
+                    throw new Error(
+                      `Import points into a directory without a index file: ${absImportPath}`
+                    );
+                  }
+
+                  // For bundling the filepaths need to be absolute
+                  return {
+                    path: path.join(absImportPath, indexFile),
+                  };
                 }
+
                 return {
-                  path: `${p}/index${extMapper.getDefault()}`,
+                  path: path.join(importPath, `index${extMapper.getDefault()}`),
                   external: true,
                 };
-              } else
+              } else {
+                if (bundle) {
+                  // For bundling the filepaths need to be absolute
+                  return {
+                    path: await withExt(absImportPath),
+                  };
+                }
+
                 return {
                   path: `${importPath}${extMapper.getDefault()}`,
                   external: true,
                 };
-            } else if (extMapper.hasMapping(importExt)) {
-              return {
-                path: changeExt(importPath, extMapper.map(importExt)),
-                external: true,
-              };
+              }
+            } else {
+              if (bundle) {
+                // For bundling the filepaths need to be absolute
+                return {
+                  path: hasExtension(absImportPath)
+                    ? absImportPath
+                    : await withExt(absImportPath),
+                };
+              }
+
+              if (extMapper.hasMapping(importExt)) {
+                return {
+                  path: changeExt(importPath, extMapper.map(importExt)),
+                  external: true,
+                };
+              }
             }
           } else {
+            if (bundle) {
+              // For bundling the filepaths need to be absolute
+              return {
+                path: args.path,
+              };
+            }
+
             return {
               path: args.path,
               external: true,

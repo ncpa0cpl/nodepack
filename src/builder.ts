@@ -74,7 +74,8 @@ export class Builder {
     originalFilePath: string,
     outDir: string,
     format: esbuild.BuildOptions["format"],
-    ext: string
+    ext: string,
+    bundle = false
   ) {
     const {
       plugins: additionalPlugins = [],
@@ -113,6 +114,7 @@ export class Builder {
           outDir,
           outfile,
           outExt,
+          bundle,
         }),
       ],
       outExtension: { ".js": outExt },
@@ -137,6 +139,45 @@ export class Builder {
     }
 
     return filePath;
+  }
+
+  async bundle(filePath: string, format: "cjs" | "esm" | "legacy") {
+    const isomorphicPath = this.resolveIsomorphicImport(filePath, format);
+
+    if (format === "cjs") {
+      return this.buildFile(
+        isomorphicPath,
+        filePath,
+        this.cjsBuildDir,
+        "cjs",
+        ".cjs",
+        true
+      );
+    }
+
+    if (format === "esm") {
+      return this.buildFile(
+        isomorphicPath,
+        filePath,
+        this.esmBuildDir,
+        "esm",
+        ".mjs",
+        true
+      );
+    }
+
+    if (format === "legacy") {
+      return this.buildFile(
+        isomorphicPath,
+        filePath,
+        this.legacyBuildDir,
+        "cjs",
+        ".js",
+        true
+      );
+    }
+
+    throw Error("Impossible scenario.");
   }
 
   async build(filePath: string, format: "cjs" | "esm" | "legacy") {
@@ -246,6 +287,7 @@ export class Builder {
           outDir,
           outfile,
           outExt,
+          bundle: false,
         }),
       ],
       outExtension: { ".js": outExt },
