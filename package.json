@@ -65,6 +65,7 @@
     "git-hook-tasks": "ncpa0cpl/git-hook-tasks",
     "husky": "^8.0.3",
     "json-to-ts": "^1.7.0",
+    "pr-changelog-gen": "^1.1.1",
     "prettier": "^2.8.8",
     "prettier-plugin-jsdoc": "^0.4.2",
     "ts-node": "^10.9.1",
