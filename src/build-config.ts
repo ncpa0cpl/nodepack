@@ -249,7 +249,7 @@ This option is currently experimental and you may encounter bugs if you use it.
 buildConfigSchema.recordOf.external.type
   .setTitle("ExternalPackages")
   .setDescription(
-    "List of packages that should not be excluded from compilation. " +
+    "List of packages that should be excluded from compilation. " +
       "Imports of those packages will be left as is, unless `replaceImports` " +
       "for that package is specified."
   );
