@@ -74,11 +74,25 @@ export const VendorBuilderPlugin = (params: {
           };
         }
 
-        return {
-          path: path.isAbsolute(args.path)
-            ? args.path
-            : path.resolve(args.resolveDir, args.path),
-        };
+        if (args.path === originalPath) {
+          return;
+        }
+
+        if (!args.path.startsWith(".") || args.path.startsWith("/")) {
+          return {
+            path: path.isAbsolute(args.path)
+              ? args.path
+              : path.resolve(args.resolveDir, args.path),
+          };
+        }
+
+        return build.resolve(args.path, {
+          importer: args.importer,
+          kind: args.kind,
+          namespace: args.namespace,
+          resolveDir: args.resolveDir,
+          pluginData: args.pluginData,
+        });
       });
     },
   };
