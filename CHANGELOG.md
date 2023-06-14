@@ -1,3 +1,11 @@
+## 2.2.1 (June 14, 2023)
+
+### Bug Fixes
+
+- #### fix: import resolution for vendor packages ([#21](https://github.com/ncpa0cpl/nodepack/pull/21))
+
+  Fixed an issue with import resolution for vendor packages. Every import within vendors was treated as a filesystem path unless marked as external or the `compileVendors` option was set to `all`. This meant that if a vendor was importing a package from `node_modules` the vendor compilation would fail.
+
 ## 2.2.0 (June 2, 2023)
 
 ### Features
