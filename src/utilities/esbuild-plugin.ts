@@ -32,7 +32,13 @@ const withExt = async (filepath: string) => {
   if (await fileExists(withCjsExt)) return withCjsExt;
 };
 
-const filesCache = new CacheMap<{
+const experimentalDecoratorsCompileCache = new CacheMap<{
+  hasDecorators: boolean;
+  originalSourceFile?: string;
+  transpiledFile?: Promise<string>;
+}>();
+
+const esDecoratorsCompileCache = new CacheMap<{
   hasDecorators: boolean;
   originalSourceFile?: string;
   transpiledFile?: Promise<string>;
@@ -224,17 +230,17 @@ export const ESbuildPlugin = (params: {
         }
       });
 
-      if (buildConfig.get("decoratorsMetadata", false)) {
-        const decoratorRegex =
-          /class.*?{.*?@[a-zA-Z0-9]+?(\(.*?\)){0,1}[\s\n]+?[a-zA-Z0-9]+?.+?;/ms;
-        const hasDecorators = (fileContent: string) =>
-          decoratorRegex.test(fileContent);
+      const decoratorRegex =
+        /class.*?{.*?@[a-zA-Z0-9]+?(\(.*?\)){0,1}[\s\n]+?[a-zA-Z0-9]+?.+?;/ms;
+      const hasDecorators = (fileContent: string) =>
+        decoratorRegex.test(fileContent);
 
+      if (buildConfig.get("esDecorators", false)) {
         build.onLoad({ filter: /\.[mc]{0,1}tsx{0,1}/ }, async (args) => {
           const ext = path.extname(args.path);
           const loader = [".ts", ".mts", ".cts"].includes(ext) ? "ts" : "tsx";
 
-          const cachedFile = filesCache.get(args.path);
+          const cachedFile = esDecoratorsCompileCache.get(args.path);
           if (cachedFile) {
             if (cachedFile.hasDecorators === false)
               return { contents: cachedFile.originalSourceFile, loader };
@@ -249,16 +255,55 @@ export const ESbuildPlugin = (params: {
             const transpiledFile = tsProgram.parseFile({
               filePath: args.path,
               fileContent: fileContent,
+              decorators: "es",
             });
 
-            filesCache.set(args.path, {
+            esDecoratorsCompileCache.set(args.path, {
               hasDecorators: true,
               transpiledFile,
             });
 
             return { contents: await transpiledFile, loader: "js" };
           } else {
-            filesCache.set(args.path, {
+            esDecoratorsCompileCache.set(args.path, {
+              hasDecorators: false,
+              originalSourceFile: fileContent,
+            });
+          }
+
+          return { contents: fileContent, loader };
+        });
+      } else if (buildConfig.get("decoratorsMetadata", false)) {
+        build.onLoad({ filter: /\.[mc]{0,1}tsx{0,1}/ }, async (args) => {
+          const ext = path.extname(args.path);
+          const loader = [".ts", ".mts", ".cts"].includes(ext) ? "ts" : "tsx";
+
+          const cachedFile = experimentalDecoratorsCompileCache.get(args.path);
+          if (cachedFile) {
+            if (cachedFile.hasDecorators === false)
+              return { contents: cachedFile.originalSourceFile, loader };
+            else return { contents: await cachedFile.transpiledFile, loader };
+          }
+
+          const fileContent = await fs.readFile(args.path, "utf-8");
+
+          const needToTranspileWithTs = hasDecorators(fileContent);
+
+          if (needToTranspileWithTs) {
+            const transpiledFile = tsProgram.parseFile({
+              filePath: args.path,
+              fileContent: fileContent,
+              decorators: "experimental",
+            });
+
+            experimentalDecoratorsCompileCache.set(args.path, {
+              hasDecorators: true,
+              transpiledFile,
+            });
+
+            return { contents: await transpiledFile, loader: "js" };
+          } else {
+            experimentalDecoratorsCompileCache.set(args.path, {
               hasDecorators: false,
               originalSourceFile: fileContent,
             });
