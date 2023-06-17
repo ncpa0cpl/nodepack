@@ -10,19 +10,25 @@ type MainThread = {
 export const TsProjectWorker = WorkerBridge(
   { file: `${getWorkersDir()}/ts-project-worker${getCurrentExtension()}` },
   (main: MainThread) => {
-    const getProject = async (options?: Partial<ts.CompilerOptions>) => {
+    const getProject = async (
+      decorators: "experimental" | "es",
+      options?: Partial<ts.CompilerOptions>
+    ) => {
       return await createProject({
         tsConfigFilePath: await main.getTsConfig(),
         skipAddingFilesFromTsConfig: true,
         compilerOptions: {
-          target: ts.ScriptTarget.ESNext,
-          experimentalDecorators: true,
-          emitDecoratorMetadata: true,
+          target:
+            decorators === "experimental"
+              ? ts.ScriptTarget.ESNext
+              : ts.ScriptTarget.ES2022,
+          experimentalDecorators: decorators === "experimental",
+          emitDecoratorMetadata: decorators === "experimental",
           sourceMap: false,
           inlineSourceMap: true,
           inlineSources: true,
           module: ts.ModuleKind.ESNext,
-          moduleResolution: ts.ModuleResolutionKind.NodeJs,
+          moduleResolution: ts.ModuleResolutionKind.Node10,
           ...options,
         },
       });
@@ -31,9 +37,13 @@ export const TsProjectWorker = WorkerBridge(
     const parseFile = async (params: {
       filePath: string;
       fileContent: string;
+      decorators: "experimental" | "es";
       compilerOptions?: Partial<ts.CompilerOptions>;
     }) => {
-      const project = await getProject(params.compilerOptions);
+      const project = await getProject(
+        params.decorators,
+        params.compilerOptions
+      );
 
       const sourceFile = project.createSourceFile(
         params.filePath,

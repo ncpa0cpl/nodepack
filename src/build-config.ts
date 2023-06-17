@@ -100,6 +100,7 @@ export const buildConfigSchema = Type.RecordOf({
   extMapping: OptionalField(TypeExtensionMap),
   pathAliases: OptionalField(TypePathAliasMap),
   decoratorsMetadata: OptionalField(Type.Boolean),
+  esDecorators: OptionalField(Type.Boolean),
   watch: OptionalField(Type.Boolean),
   external: OptionalField(Type.ArrayOf(Type.String, Type.InstanceOf(RegExp))),
   replaceImports: OptionalField(Type.Dict(Type.String)),
@@ -295,6 +296,20 @@ buildConfigSchema.recordOf.preset.type.recordOf.node.type.setDescription(
 
 TypeBannerFooterMap.setDescription(
   "A map of filename regex patterns to text or files that ought to be appended or prepended to them at the build time."
+);
+
+buildConfigSchema.recordOf.decoratorsMetadata.type.setDescription(
+  "When enabled, each file with TypeScript decorators will be first compiled via " +
+    "TypeScript (since esbuild does not support emitting decorators metadata) " +
+    "and then compiled via esbuild as usual. This will result in slower build times. " +
+    "And broken source maps.\n\nThis option should not be used alog with `esDecorators` option."
+);
+
+buildConfigSchema.recordOf.esDecorators.type.setDescription(
+  "Esbuild does not support ECMScript decorators as of yet. When this options is " +
+    "enabled, each file with decorators will be first compiled via TypeScript " +
+    "and then compiled via esbuild as usual. This will result in slower build times. " +
+    "And broken source maps.\n\nThis option should not be used alog with `decoratorsMetadata` option."
 );
 
 export const validateBuildConfig = (config: BuildConfig) => {

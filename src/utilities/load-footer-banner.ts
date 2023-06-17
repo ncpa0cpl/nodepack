@@ -29,6 +29,9 @@ export const loadFooterBanner = async (
           filePath: "footer-or-banner.ts",
           fileContent: footerBanner.text,
           compilerOptions: tsOptions,
+          decorators: program.config.get("esDecorators", false)
+            ? "es"
+            : "experimental",
         });
       case "esbuild":
         return await esbuild
@@ -56,6 +59,9 @@ export const loadFooterBanner = async (
           filePath: path.basename(footerBanner.file),
           fileContent: fileContent,
           compilerOptions: tsOptions,
+          decorators: program.config.get("esDecorators", false)
+            ? "es"
+            : "experimental",
         });
       default:
         return await esbuild
