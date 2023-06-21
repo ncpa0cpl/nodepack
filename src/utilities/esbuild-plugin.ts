@@ -77,6 +77,8 @@ export const ESbuildPlugin = (params: {
     name: "nodepack-esbuild-plugin",
     setup(build: esbuild.PluginBuild) {
       build.onResolve({ filter: /.*/ }, async (args) => {
+        if (args.pluginData?.nodepackResolved === true) return;
+
         const originalPath = args.path;
         args = { ...args };
 
@@ -201,9 +203,17 @@ export const ESbuildPlugin = (params: {
           } else {
             if (bundle) {
               // For bundling the filepaths need to be absolute
-              return {
-                path: args.path,
-              };
+              return build.resolve(args.path, {
+                importer: args.importer,
+                kind: args.kind,
+                namespace: args.namespace,
+                pluginData: args.pluginData
+                  ? Object.assign(args.pluginData, {
+                      nodepackResolved: true,
+                    })
+                  : { nodepackResolved: true },
+                resolveDir: args.resolveDir,
+              });
             }
 
             return {
