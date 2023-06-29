@@ -1,3 +1,11 @@
+## 2.2.2 (June 29, 2023)
+
+### Bug Fixes
+
+- #### fix: esbuild error when attempting to bundle project with non-external node modules imports ([#23](https://github.com/ncpa0cpl/nodepack/pull/23))
+
+  Fixed a bug which caused builds with the `bundle` option enabled to fail, if the project was importing any npm modules. (If the module was being marked as external this bug was not occurring.)
+
 ## 2.2.1 (June 14, 2023)
 
 ### Bug Fixes
