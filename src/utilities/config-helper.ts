@@ -4,6 +4,8 @@ import { denoPreset } from "./presets/deno.preset";
 import { gjsPreset } from "./presets/gjs.preset";
 import { nodePreset } from "./presets/node.preset";
 
+export type FooterBanner = ValueOf<Defined<BuildConfig["banner"]>>;
+
 type MergeWithCustomizer = {
   bivariantHack(
     value: any,
@@ -15,6 +17,8 @@ type MergeWithCustomizer = {
 }["bivariantHack"];
 
 type Defined<T> = Exclude<T, undefined | null>;
+
+type ValueOf<T extends object> = T[keyof T];
 
 export class ConfigHelper {
   vendors = new Set<string>();
@@ -82,6 +86,34 @@ export class ConfigHelper {
     }
 
     return false;
+  }
+
+  getFooterBanner(file: string) {
+    const bannerMap = this.config.banner ?? {};
+    const footerMap = this.config.footer ?? {};
+    const bannerKeys = Object.keys(bannerMap);
+    const footerKeys = Object.keys(footerMap);
+
+    const result = {
+      banner: null as null | FooterBanner,
+      footer: null as null | FooterBanner,
+    };
+
+    for (const bannerKey of bannerKeys) {
+      const regexp = new RegExp(bannerKey);
+      if (regexp.test(file)) {
+        result.banner = bannerMap[bannerKey]!;
+      }
+    }
+
+    for (const footerKey of footerKeys) {
+      const regexp = new RegExp(footerKey);
+      if (regexp.test(file)) {
+        result.footer = footerMap[footerKey]!;
+      }
+    }
+
+    return result;
   }
 
   get<K extends keyof BuildConfig>(configProperty: K): BuildConfig[K];

@@ -1,5 +1,4 @@
 import { WorkerBridge } from "@ncpa0cpl/node-worker-bridge";
-import type { Project } from "@ts-morph/bootstrap";
 import { createProject, ts } from "@ts-morph/bootstrap";
 import { getCurrentExtension } from "./get-ext";
 import { getWorkersDir } from "./get-workers-dir";
@@ -11,12 +10,8 @@ type MainThread = {
 export const TsProjectWorker = WorkerBridge(
   { file: `${getWorkersDir()}/ts-project-worker${getCurrentExtension()}` },
   (main: MainThread) => {
-    let project: Project;
-
-    const getProject = async () => {
-      if (project) return project;
-
-      project = await createProject({
+    const getProject = async (options?: Partial<ts.CompilerOptions>) => {
+      return await createProject({
         tsConfigFilePath: await main.getTsConfig(),
         skipAddingFilesFromTsConfig: true,
         compilerOptions: {
@@ -28,17 +23,17 @@ export const TsProjectWorker = WorkerBridge(
           inlineSources: true,
           module: ts.ModuleKind.ESNext,
           moduleResolution: ts.ModuleResolutionKind.NodeJs,
+          ...options,
         },
       });
-
-      return project;
     };
 
     const parseFile = async (params: {
       filePath: string;
       fileContent: string;
+      compilerOptions?: Partial<ts.CompilerOptions>;
     }) => {
-      const project = await getProject();
+      const project = await getProject(params.compilerOptions);
 
       const sourceFile = project.createSourceFile(
         params.filePath,
