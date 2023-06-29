@@ -3,6 +3,7 @@ import path from "path";
 import type { ProgramContext } from "./program";
 import { changeExt } from "./utilities/change-ext";
 import { ESbuildPlugin } from "./utilities/esbuild-plugin";
+import { loadFooterBanner } from "./utilities/load-footer-banner";
 import { VendorBuilder } from "./vendor-builder";
 
 export class Builder {
@@ -50,8 +51,15 @@ export class Builder {
 
     const outfile = changeExt(outFilePath, outExt);
 
+    const footerBannerOptions = await this.resolveFootersBanners(
+      actualFilePath,
+      format,
+      bundle
+    );
+
     const r = await esbuild.build({
       ...additionalOptions,
+      ...footerBannerOptions,
       entryPoints: [actualFilePath],
       outfile,
       target: this.program.config.get("target"),
@@ -75,6 +83,48 @@ export class Builder {
     });
 
     return r;
+  }
+
+  private async resolveFootersBanners(
+    filepath: string,
+    format: esbuild.BuildOptions["format"],
+    bundle: boolean
+  ): Promise<{
+    footer: Record<string, string>;
+    banner: Record<string, string>;
+  }> {
+    if (bundle) {
+      const footers = await Promise.all(
+        Object.values(this.program.config.get("footer", {})).map((f) =>
+          loadFooterBanner(this.program, format, f)
+        )
+      );
+      const banners = await Promise.all(
+        Object.values(this.program.config.get("banner", {})).map((f) =>
+          loadFooterBanner(this.program, format, f)
+        )
+      );
+
+      return {
+        footer: footers.length ? { js: footers.join("\n") } : {},
+        banner: banners.length ? { js: banners.join("\n") } : {},
+      };
+    } else {
+      const footerAndBanner = this.program.config.getFooterBanner(filepath);
+
+      const footer = footerAndBanner.footer
+        ? await loadFooterBanner(this.program, format, footerAndBanner.footer)
+        : undefined;
+
+      const banner = footerAndBanner.banner
+        ? await loadFooterBanner(this.program, format, footerAndBanner.banner)
+        : undefined;
+
+      return {
+        footer: footer ? { js: footer } : {},
+        banner: banner ? { js: banner } : {},
+      };
+    }
   }
 
   private resolveIsomorphicImport(

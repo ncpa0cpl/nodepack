@@ -33,6 +33,25 @@ const TypeExtensionMap = Type.Custom(isValidExtMapping).setExtra({
   type: 'Record<`.${string}`, `.${string}` | "%FORMAT%">',
 });
 
+const TypeBannerFooterLoader = Type.OneOf(
+  Type.Literal("esbuild"),
+  Type.Literal("typescript"),
+  Type.Literal("copy")
+);
+
+const TypeBannerFooterMap = Type.Dict(
+  Type.OneOf(
+    Type.RecordOf({
+      file: Type.String,
+      loader: OptionalField(TypeBannerFooterLoader),
+    }),
+    Type.RecordOf({
+      text: Type.String,
+      loader: OptionalField(TypeBannerFooterLoader),
+    })
+  )
+);
+
 export const buildConfigSchema = Type.RecordOf({
   target: Type.OneOf(
     Type.Literal("es2015"),
@@ -107,6 +126,8 @@ export const buildConfigSchema = Type.RecordOf({
       gjs: OptionalField(Type.Boolean),
     })
   ),
+  banner: OptionalField(TypeBannerFooterMap),
+  footer: OptionalField(TypeBannerFooterMap),
 });
 
 buildConfigSchema.setTitle("BuildConfig");
@@ -270,6 +291,10 @@ with the exception of files and packages marked as external or as vendors.
 
 buildConfigSchema.recordOf.preset.type.recordOf.node.type.setDescription(
   "When enabled all the packages provided by the Node environment will be added to the `external` array."
+);
+
+TypeBannerFooterMap.setDescription(
+  "A map of filename regex patterns to text or files that ought to be appended or prepended to them at the build time."
 );
 
 export const validateBuildConfig = (config: BuildConfig) => {

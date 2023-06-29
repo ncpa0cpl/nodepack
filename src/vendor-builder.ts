@@ -2,6 +2,7 @@ import esbuild from "esbuild";
 import path from "path";
 import { nodepackDir } from "./get-nodepack-dir/get-nodepack-dir";
 import type { ProgramContext } from "./program";
+import { loadFooterBanner } from "./utilities/load-footer-banner";
 import { VendorBuilderPlugin } from "./utilities/vendor-builder-plugin";
 
 export class VendorBuilder {
@@ -53,9 +54,17 @@ export class VendorBuilder {
       `${vendorName}${ext}`
     );
 
+    const entrypointFilepath = this.getVendorProxyFilePath(format);
+
+    const footerBannerOptions = await this.resolveFootersBanners(
+      vendorName,
+      format
+    );
+
     const r = await esbuild.build({
       ...additionalOptions,
-      entryPoints: [this.getVendorProxyFilePath(format)],
+      ...footerBannerOptions,
+      entryPoints: [entrypointFilepath],
       outfile: outpath,
       target: this.program.config.get("target"),
       tsconfig: this.program.config.get("tsConfig"),
@@ -76,6 +85,29 @@ export class VendorBuilder {
     });
 
     return r;
+  }
+
+  private async resolveFootersBanners(
+    filepath: string,
+    format: esbuild.BuildOptions["format"]
+  ): Promise<{
+    footer: Record<string, string>;
+    banner: Record<string, string>;
+  }> {
+    const footerAndBanner = this.program.config.getFooterBanner(filepath);
+
+    const footer = footerAndBanner.footer
+      ? await loadFooterBanner(this.program, format, footerAndBanner.footer)
+      : undefined;
+
+    const banner = footerAndBanner.banner
+      ? await loadFooterBanner(this.program, format, footerAndBanner.banner)
+      : undefined;
+
+    return {
+      footer: footer ? { js: footer } : {},
+      banner: banner ? { js: banner } : {},
+    };
   }
 
   private buildVendors(vendors: string[], format: "cjs" | "esm" | "legacy") {
