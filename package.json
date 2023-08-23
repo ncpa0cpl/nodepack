@@ -1,6 +1,6 @@
 {
   "name": "@ncpa0cpl/nodepack",
-  "version": "2.2.2",
+  "version": "2.3.0",
   "main": "./dist/legacy/index.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
