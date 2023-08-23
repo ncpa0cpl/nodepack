@@ -1,3 +1,15 @@
+## 2.3.0 (August 23, 2023)
+
+### Features
+
+- #### feat: added support for compiling the ECMAScript decorators ([#25](https://github.com/ncpa0cpl/nodepack/pull/25))
+
+  Added a new config option (`esDecorators`) that enables compiling the new ECMAScript decorators. When enabled, for each file containing decorators TypeScript will be used to parse it into JavaScript before handing it to the esbuild.
+
+- #### feat: adding banner and footers to individual compiled files ([#24](https://github.com/ncpa0cpl/nodepack/pull/24))
+
+  Added two new config options: `footer` and `banner`. Those can be used to inject code or comments to the top or bottom of selected output files. Both options can be provided with either a string or a filename with the contents to add to the output. Additionally provided banner and footers can be parsed using the specified loader ("copy", "esbuild" and "typescript"). By default string are loaded using "copy", and files are loaded using "esbuild".
+
 ## 2.2.2 (June 29, 2023)
 
 ### Bug Fixes
