@@ -23,8 +23,6 @@ export async function build(config: BuildConfig) {
     const ops: Promise<void>[] = [];
 
     if (config.watch) {
-      console.log("Watching for changes...");
-
       await program.watchSource();
       return;
     }

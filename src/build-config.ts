@@ -33,6 +33,10 @@ const TypeExtensionMap = Type.Custom(isValidExtMapping).setExtra({
   type: 'Record<`.${string}`, `.${string}` | "%FORMAT%">',
 });
 
+const TypeOnBuildCompleteCb = Type.Function.setExtra({
+  type: "() => void | (() => any)",
+});
+
 const TypeBannerFooterLoader = Type.OneOf(
   Type.Literal("esbuild"),
   Type.Literal("typescript"),
@@ -129,6 +133,8 @@ export const buildConfigSchema = Type.RecordOf({
   ),
   banner: OptionalField(TypeBannerFooterMap),
   footer: OptionalField(TypeBannerFooterMap),
+  onBuildComplete: OptionalField(TypeOnBuildCompleteCb),
+  watchAbortSignal: OptionalField(Type.InstanceOf(AbortSignal)),
 });
 
 buildConfigSchema.setTitle("BuildConfig");
@@ -310,6 +316,14 @@ buildConfigSchema.recordOf.esDecorators.type.setDescription(
     "enabled, each file with decorators will be first compiled via TypeScript " +
     "and then compiled via esbuild as usual. This will result in slower build times. " +
     "And broken source maps.\n\nThis option should not be used alog with `decoratorsMetadata` option."
+);
+
+buildConfigSchema.recordOf.onBuildComplete.type.setDescription(
+  "Only in watch mode, a callback that will be invoked after each compilation, can return another function used for cleanup."
+);
+
+buildConfigSchema.recordOf.watchAbortSignal.type.setDescription(
+  "Only in watch mode, an instance of AbortSignal that can be used to abort the watchers."
 );
 
 export const validateBuildConfig = (config: BuildConfig) => {

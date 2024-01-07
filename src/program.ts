@@ -1,5 +1,4 @@
-import type { BuildContext } from "esbuild";
-import fs from "fs";
+import chokidar from "chokidar";
 import { walk } from "node-os-walk";
 import path from "path";
 import type { BuildConfig } from "./build-config-type";
@@ -11,9 +10,7 @@ import { ExcludeFacade } from "./utilities/exclude-facade";
 import { ExtensionMapper } from "./utilities/extension-mapper";
 import { FormatsFacade } from "./utilities/formats-facade";
 import { CacheMap } from "./utilities/info-cache";
-import { isDirectory } from "./utilities/is-directory";
 import { isParsable } from "./utilities/is-parsable";
-import { fileExists } from "./utilities/is-real-path";
 import { IsomorphicImportsMapper } from "./utilities/isomorphic-imports-mapper";
 import { PathAliasResolver } from "./utilities/path-alias-resolver";
 import { getTsWorkerPool } from "./workers";
@@ -28,6 +25,8 @@ export type ProgramContext = {
   isomorphicImports: IsomorphicImportsMapper;
   vendorsDir: string;
 };
+
+const noop = () => {};
 
 export class Program {
   context: ProgramContext;
@@ -46,6 +45,15 @@ export class Program {
       ),
       vendorsDir: "_vendors",
     };
+  }
+
+  private shouldCompile(filePath: string) {
+    return (
+      this.context.excludes.isNotExcluded(filePath) &&
+      (isParsable(filePath) ||
+        this.context.extMap.hasMapping(path.extname(filePath))) &&
+      !this.context.isomorphicImports.isIsomorphicTarget(filePath)
+    );
   }
 
   private async bundle(builder: Builder) {
@@ -80,7 +88,7 @@ export class Program {
     await builder.vendorBuilder.flush();
   }
 
-  private async buildFiles(builder: Builder) {
+  private async build(builder: Builder) {
     const filesForCompilation: string[] = [];
 
     for await (const [root, _, files] of walk(
@@ -89,33 +97,26 @@ export class Program {
       for (const file of files) {
         const filePath = path.join(root, file.name);
 
-        if (
-          this.context.excludes.isNotExcluded(filePath) &&
-          (isParsable(filePath) ||
-            this.context.extMap.hasMapping(path.extname(filePath))) &&
-          !this.context.isomorphicImports.isIsomorphicTarget(filePath)
-        ) {
+        if (this.shouldCompile(filePath)) {
           filesForCompilation.push(filePath);
         }
       }
     }
 
+    return this.buildFiles(builder, filesForCompilation);
+  }
+
+  private async buildFiles(builder: Builder, files: string[]) {
     if (this.context.formats.isCjs) {
-      await Promise.all(
-        filesForCompilation.map((file) => builder.build(file, "cjs"))
-      );
+      await Promise.all(files.map((file) => builder.build(file, "cjs")));
     }
 
     if (this.context.formats.isEsm) {
-      await Promise.all(
-        filesForCompilation.map((file) => builder.build(file, "esm"))
-      );
+      await Promise.all(files.map((file) => builder.build(file, "esm")));
     }
 
     if (this.context.formats.isLegacy) {
-      await Promise.all(
-        filesForCompilation.map((file) => builder.build(file, "legacy"))
-      );
+      await Promise.all(files.map((file) => builder.build(file, "legacy")));
     }
 
     const vendors = this.context.config.get("compileVendors");
@@ -136,7 +137,7 @@ export class Program {
     if (this.context.config.get("bundle")) {
       await this.bundle(builder);
     } else {
-      await this.buildFiles(builder);
+      await this.build(builder);
     }
   }
 
@@ -168,116 +169,68 @@ export class Program {
       this.context.config.get("outDir")
     );
 
-    const watched = new Map<string, BuildContext[]>();
+    const onBuildComplete = this.context.config.get("onBuildComplete") as
+      | (() => void | (() => any))
+      | undefined;
+    const bundle = this.context.config.get("bundle");
+    const abortSignal = this.context.config.get("watchAbortSignal");
 
-    const startWatchingSourceFile = async (file: string) => {
-      if (await fileExists(file)) {
-        const awaiters: Promise<any>[] = [];
-        const ctxs: BuildContext[] = [];
+    console.log("Initial build...");
+    if (this.context.config.get("bundle")) {
+      await this.bundle(builder).catch((error) => {
+        console.error(error);
+      });
+    } else {
+      await this.build(builder).catch((error) => {
+        console.error(error);
+      });
+    }
 
-        if (this.context.formats.isCjs) {
-          const { awaiter, buildContext } = await builder.watch(file, "cjs");
-          awaiters.push(awaiter);
-          ctxs.push(buildContext);
-        }
+    let cleanup = noop;
 
-        if (this.context.formats.isEsm) {
-          const { awaiter, buildContext } = await builder.watch(file, "esm");
-          awaiters.push(awaiter);
-          ctxs.push(buildContext);
-        }
+    try {
+      cleanup = onBuildComplete?.() ?? noop;
+    } catch {
+      //
+    }
 
-        if (this.context.formats.isLegacy) {
-          const { awaiter, buildContext } = await builder.watch(file, "legacy");
-          awaiters.push(awaiter);
-          ctxs.push(buildContext);
-        }
-
-        watched.set(file, ctxs);
-
-        return Promise.all(awaiters);
-      }
-
-      return Promise.resolve([]);
-    };
-
-    const startWatchingDirectory = (dir: string) => {
-      fs.watch(dir, {}, async (eventType, filename) => {
-        if (eventType === "rename" && filename != null) {
-          console.log("file rename detected", filename);
-
-          const filepath = path.resolve(dir, filename);
-
-          const previousCtxs = watched.get(filepath);
-          watched.delete(filepath);
-          if (previousCtxs) {
-            for (const ctx of previousCtxs) {
-              await ctx.cancel();
-              await ctx.dispose();
-            }
+    console.log("Watching for changes...");
+    const watcher = chokidar
+      .watch(this.context.config.get("srcDir"), { ignoreInitial: true })
+      .on("all", (event, path) => {
+        if (event !== "addDir" && this.shouldCompile(path)) {
+          try {
+            cleanup();
+          } catch {
+            //
           }
 
-          onFileRename(filepath);
+          if (bundle) {
+            this.bundle(builder).catch((error) => {
+              console.error(error);
+            });
+          } else {
+            this.buildFiles(builder, [path]).catch((error) => {
+              console.error(error);
+            });
+          }
+
+          try {
+            cleanup = onBuildComplete?.() ?? noop;
+          } catch {
+            //
+          }
         }
       });
-    };
 
-    const onFileRename = async (filename: string) => {
-      if (await isDirectory(filename)) {
-        for await (const [root, dirs, files] of walk(filename)) {
-          for (const file of files) {
-            const filePath = path.join(root, file.name);
-
-            if (
-              this.context.excludes.isNotExcluded(filePath) &&
-              (isParsable(filePath) ||
-                this.context.extMap.hasMapping(path.extname(filePath))) &&
-              !this.context.isomorphicImports.isIsomorphicTarget(filePath)
-            ) {
-              filesForCompilation.push(filePath);
-            }
-          }
-
-          for (const dir of dirs) {
-            const dirPath = path.join(root, dir.name);
-            startWatchingDirectory(dirPath);
-          }
-        }
-      } else {
-        startWatchingSourceFile(filename);
+    return new Promise<void>((resolve) => {
+      if (abortSignal) {
+        abortSignal.onabort = () => {
+          watcher.close();
+          resolve();
+        };
       }
-    };
-
-    startWatchingDirectory(this.context.config.get("srcDir"));
-
-    const vendors = this.context.config.get("compileVendors");
-    if (Array.isArray(vendors)) {
-      builder.vendorBuilder.addVendors(vendors);
-    }
-
-    const filesForCompilation: string[] = [];
-    for await (const [root, dirs, files] of walk(
-      this.context.config.get("srcDir")
-    )) {
-      for (const file of files) {
-        const filePath = path.join(root, file.name);
-
-        if (
-          this.context.excludes.isNotExcluded(filePath) &&
-          (isParsable(filePath) ||
-            this.context.extMap.hasMapping(path.extname(filePath)))
-        ) {
-          filesForCompilation.push(filePath);
-        }
-      }
-
-      for (const dir of dirs) {
-        const dirPath = path.join(root, dir.name);
-        startWatchingDirectory(dirPath);
-      }
-    }
-
-    await Promise.all(filesForCompilation.flatMap(startWatchingSourceFile));
+    });
   }
 
   close() {
