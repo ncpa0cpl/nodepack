@@ -1,3 +1,11 @@
+## 2.3.1 (January 8, 2023)
+
+### Bug Fixes
+
+- #### fix: watch mode
+
+  Added chokidar for watch mode instead of relying on the fs.watch function.
+
 ## 2.3.0 (August 23, 2023)
 
 ### Features
