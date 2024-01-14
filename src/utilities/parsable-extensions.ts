@@ -9,7 +9,7 @@ export const JS_EXTENSIONS = [
   ".jsx",
 ];
 
-export const ESBUILD_SUPPORTED_EXTENSIONS = [".json", ".txt", ".data"];
+export const ESBUILD_SUPPORTED_EXTENSIONS = [".json", ".txt", ".data", ".css"];
 
 export const PARSABLE_EXTENSIONS = [
   ...JS_EXTENSIONS,

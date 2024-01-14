@@ -50,7 +50,10 @@ export class Program {
   private shouldCompile(filePath: string) {
     return (
       this.context.excludes.isNotExcluded(filePath) &&
-      (isParsable(filePath) ||
+      (isParsable(
+        this.context.config.get("parsableExtensions", []),
+        filePath
+      ) ||
         this.context.extMap.hasMapping(path.extname(filePath))) &&
       !this.context.isomorphicImports.isIsomorphicTarget(filePath)
     );

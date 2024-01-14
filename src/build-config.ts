@@ -135,6 +135,7 @@ export const buildConfigSchema = Type.RecordOf({
   footer: OptionalField(TypeBannerFooterMap),
   onBuildComplete: OptionalField(TypeOnBuildCompleteCb),
   watchAbortSignal: OptionalField(Type.InstanceOf(AbortSignal)),
+  parsableExtensions: OptionalField(Type.ArrayOf(Type.String)),
 });
 
 buildConfigSchema.setTitle("BuildConfig");
@@ -324,6 +325,12 @@ buildConfigSchema.recordOf.onBuildComplete.type.setDescription(
 
 buildConfigSchema.recordOf.watchAbortSignal.type.setDescription(
   "Only in watch mode, an instance of AbortSignal that can be used to abort the watchers."
+);
+
+buildConfigSchema.recordOf.parsableExtensions.type.setDescription(
+  "List of file extensions that should be parsed by the ESBuild compiler. By default only" +
+    " filetypes that ESBuild can handle are compiled, if a plugin is added for handling" +
+    " other filetypes - the appropriate extension should be added here."
 );
 
 export const validateBuildConfig = (config: BuildConfig) => {
