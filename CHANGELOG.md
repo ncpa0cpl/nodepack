@@ -1,3 +1,11 @@
+## 2.3.2 (January 14, 2024)
+
+### Features
+
+- #### feat: added new build option ([#28](https://github.com/ncpa0cpl/nodepack/pull/28))
+
+  Added a new build option: `parsableExtensions`
+
 ## 2.3.1 (January 8, 2023)
 
 ### Bug Fixes
