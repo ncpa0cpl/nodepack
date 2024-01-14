@@ -17,7 +17,8 @@
     "test:prettier": "prettier -c ./src",
     "test:tsc": "tsc --noEmit",
     "build": "node ./scripts/build.cjs",
-    "upgrade:deps": "node ./scripts/upgrade.mjs"
+    "upgrade:deps": "node ./scripts/upgrade.mjs",
+    "prepare": "husky install"
   },
   "keywords": [
     "esbuild",
