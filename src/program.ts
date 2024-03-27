@@ -200,28 +200,32 @@ export class Program {
     console.log("Watching for changes...");
     const watcher = chokidar
       .watch(this.context.config.get("srcDir"), { ignoreInitial: true })
-      .on("all", (event, path) => {
-        if (event !== "addDir" && this.shouldCompile(path)) {
+      .on("all", async (event, fpath) => {
+        if (event !== "addDir" && this.shouldCompile(fpath)) {
+          console.log(
+            `Detected change in ${path.basename(fpath)}, rebuilding...`
+          );
+
           try {
-            cleanup();
-          } catch {
-            //
+            await cleanup();
+          } catch (e) {
+            console.error(e);
           }
 
           if (bundle) {
-            this.bundle(builder).catch((error) => {
+            await this.bundle(builder).catch((error) => {
               console.error(error);
             });
           } else {
-            this.buildFiles(builder, [path]).catch((error) => {
+            await this.buildFiles(builder, [fpath]).catch((error) => {
               console.error(error);
             });
           }
 
           try {
             cleanup = onBuildComplete?.() ?? noop;
-          } catch {
-            //
+          } catch (e) {
+            console.error(e);
           }
         }
       });
