@@ -1,3 +1,11 @@
+## 2.3.3 (March 27, 2024)
+
+### Bug Fixes
+
+- #### fix: onBuildComplete was called without waiting for build to complete ([#29](https://github.com/ncpa0cpl/nodepack/pull/29))
+
+  Fixed a bug that was allowing for the `onBuildComplete` in watch mode to be called before the build actually completed.
+
 ## 2.3.2 (January 14, 2024)
 
 ### Features
