@@ -350,12 +350,12 @@
   dependencies:
     "@ts-morph/common" "~0.19.0"
 
-"@ts-morph/bootstrap@^0.23.0":
-  version "0.23.0"
-  resolved "https://registry.yarnpkg.com/@ts-morph/bootstrap/-/bootstrap-0.23.0.tgz#469b06cab89b00d404408980b07b97e1a548fede"
-  integrity sha512-ymJv4mgtELz7hMrm8ZBdONW2GaAjO3EcdS3Edc/91t0wiBsl6v4ge67nPAJrGZo75kM2loQfyYwHl864PdPbTw==
+"@ts-morph/bootstrap@^0.24.0":
+  version "0.24.0"
+  resolved "https://registry.yarnpkg.com/@ts-morph/bootstrap/-/bootstrap-0.24.0.tgz#0be700e7873cb7e516e70c0f2709f2ebc467adae"
+  integrity sha512-GNmmQFk8P8bxQ/wweWF2JwRepyODzy0mN0IJze20ZhRxUHHoanQBcrkpFEL+yHmHG1AH9l8U1+mPWan9Wfa92A==
   dependencies:
-    "@ts-morph/common" "~0.23.0"
+    "@ts-morph/common" "~0.24.0"
 
 "@ts-morph/common@~0.19.0":
   version "0.19.0"
@@ -367,13 +367,13 @@
     mkdirp "^2.1.6"
     path-browserify "^1.0.1"
 
-"@ts-morph/common@~0.23.0":
-  version "0.23.0"
-  resolved "https://registry.yarnpkg.com/@ts-morph/common/-/common-0.23.0.tgz#bd4ddbd3f484f29476c8bd985491592ae5fc147e"
-  integrity sha512-m7Lllj9n/S6sOkCkRftpM7L24uvmfXQFedlW/4hENcuJH1HHm9u5EgxZb9uVjQSCGrbBWBkOGgcTxNg36r6ywA==
+"@ts-morph/common@~0.24.0":
+  version "0.24.0"
+  resolved "https://registry.yarnpkg.com/@ts-morph/common/-/common-0.24.0.tgz#9125b3d5ef9e2633cd6a54296b420b89366599c1"
+  integrity sha512-c1xMmNHWpNselmpIqursHeOHHBTIsJLbB+NuovbTTRCNiTLEr/U9dbJ8qy0jd/O2x5pc3seWuOUN5R2IoOTp8A==
   dependencies:
     fast-glob "^3.3.2"
-    minimatch "^9.0.3"
+    minimatch "^9.0.4"
     mkdirp "^3.0.1"
     path-browserify "^1.0.1"
 
@@ -1951,10 +1951,10 @@ minimatch@^7.4.3:
   dependencies:
     brace-expansion "^2.0.1"
 
-minimatch@^9.0.3:
-  version "9.0.3"
-  resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-9.0.3.tgz#a6e00c3de44c3a542bfaae70abfc22420a6da825"
-  integrity sha512-RHiac9mvaRw0x3AYRgDC1CxAP7HTcNrrECeA8YYJeWnpo+2Q5CegtZjaotWTWxDG3UeGA1coE05iH1mPjT/2mg==
+minimatch@^9.0.4:
+  version "9.0.4"
+  resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-9.0.4.tgz#8e49c731d1749cbec05050ee5145147b32496a51"
+  integrity sha512-KqWh+VchfxcMNRAJjj2tnsSJdNbHsVgnkBhTNrW7AjVo6OvLtxw8zfT9oLw1JSohlFzJ8jCoTgaoXvJ+kHt6fw==
   dependencies:
     brace-expansion "^2.0.1"
 
