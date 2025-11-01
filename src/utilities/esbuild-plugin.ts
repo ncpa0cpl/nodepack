@@ -152,7 +152,7 @@ export const ESbuildPlugin = (params: {
               // and select first matching file if exist
               const filepathWithExt = await withExt(absImportPath);
 
-              if (filepathWithExt !== null) {
+              if (filepathWithExt != null) {
                 if (bundle) {
                   // For bundling the filepaths need to be absolute
                   return {
