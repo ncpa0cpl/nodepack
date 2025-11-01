@@ -13,23 +13,38 @@ import { fileExists } from "./is-real-path";
 const hasExtension = (filepath: string) => path.extname(filepath) !== "";
 
 const withExt = async (filepath: string) => {
-  const withTsExt = `${filepath}.ts`;
-  if (await fileExists(withTsExt)) return withTsExt;
+  const possibleExtensions = [
+    ".ts",
+    ".mts",
+    ".cts",
+    ".js",
+    ".mjs",
+    ".cjs",
+    ".tsx",
+    ".mtsx",
+    ".ctsx",
+    ".jsx",
+    ".mjsx",
+    ".cjsx",
+  ];
 
-  const withMtsExt = `${filepath}.mts`;
-  if (await fileExists(withMtsExt)) return withMtsExt;
+  const fileExistenceChecks = possibleExtensions.map(async (ext) => {
+    const fullPath = `${filepath}${ext}`;
+    if (await fileExists(fullPath)) {
+      return fullPath;
+    }
+    return null; // Return null if the file doesn't exist
+  });
 
-  const withCtsExt = `${filepath}.cts`;
-  if (await fileExists(withCtsExt)) return withCtsExt;
+  const allResults = await Promise.all(fileExistenceChecks);
 
-  const withJsExt = `${filepath}.js`;
-  if (await fileExists(withJsExt)) return withJsExt;
+  for (const result of allResults) {
+    if (result != null) {
+      return result;
+    }
+  }
 
-  const withMjsExt = `${filepath}.mjs`;
-  if (await fileExists(withMjsExt)) return withMjsExt;
-
-  const withCjsExt = `${filepath}.cjs`;
-  if (await fileExists(withCjsExt)) return withCjsExt;
+  return undefined;
 };
 
 const experimentalDecoratorsCompileCache = new CacheMap<{
