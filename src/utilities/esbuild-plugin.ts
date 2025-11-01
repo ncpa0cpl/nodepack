@@ -148,7 +148,23 @@ export const ESbuildPlugin = (params: {
             if (importExt === "") {
               // scenario: import is a filepath, but has no extension
 
-              if (await isDirectory(absImportPath)) {
+              // check for every possible extension,
+              // and select first matching file if exist
+              const filepathWithExt = await withExt(absImportPath);
+
+              if (filepathWithExt !== null) {
+                if (bundle) {
+                  // For bundling the filepaths need to be absolute
+                  return {
+                    path: filepathWithExt,
+                  };
+                }
+
+                return {
+                  path: `${importPath}${extMapper.getDefault()}`,
+                  external: true,
+                };
+              } else if (await isDirectory(absImportPath)) {
                 // If the import path points to a directory,
                 // rewrite the path to the index file inside
                 // that directory. So for example:
@@ -161,9 +177,13 @@ export const ESbuildPlugin = (params: {
                   );
 
                   if (!indexFile) {
-                    throw new Error(
-                      `Import points into a directory without a index file: ${absImportPath}`
-                    );
+                    return {
+                      errors: [
+                        {
+                          text: `Import points into a directory without a index file: ${absImportPath}`,
+                        },
+                      ],
+                    };
                   }
 
                   // For bundling the filepaths need to be absolute
@@ -177,16 +197,8 @@ export const ESbuildPlugin = (params: {
                   external: true,
                 };
               } else {
-                if (bundle) {
-                  // For bundling the filepaths need to be absolute
-                  return {
-                    path: await withExt(absImportPath),
-                  };
-                }
-
                 return {
-                  path: `${importPath}${extMapper.getDefault()}`,
-                  external: true,
+                  errors: [{ text: `File does not exist: ${absImportPath}` }],
                 };
               }
             } else {
