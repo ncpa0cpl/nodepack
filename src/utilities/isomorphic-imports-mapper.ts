@@ -1,5 +1,25 @@
 import path from "path";
 import type { BuildConfig } from "../build-config-type";
+import { asRelative } from "./as-relative";
+
+function isIndexFile(p: string) {
+  return p.match(/index\.(?:tsx?|mtsx?|ctsx?|jsx?|mjsx?|cjsx?)$/);
+}
+
+const possibleIndexes = [
+  "index.js",
+  "index.mjs",
+  "index.cjs",
+  "index.jsx",
+  "index.mjsx",
+  "index.cjsx",
+  "index.ts",
+  "index.mts",
+  "index.cts",
+  "index.tsx",
+  "index.mtsx",
+  "index.ctsx",
+];
 
 export class IsomorphicImportsMapper {
   private isomorphicTargets = {
@@ -58,50 +78,103 @@ export class IsomorphicImportsMapper {
   public isIsomorphicTarget(importPath: string): boolean {
     const isAbsolute = path.isAbsolute(importPath);
 
+    let relative: string;
     if (isAbsolute) {
-      const relative = path.relative(this.srcDir, importPath);
-      return (
-        this.isomorphicTargets.cjs.has(relative)
-        || this.isomorphicTargets.esm.has(relative)
-        || this.isomorphicTargets.legacy.has(relative)
-      );
+      relative = path.relative(this.srcDir, importPath);
     } else {
-      importPath = path.normalize(importPath);
-      return (
-        this.isomorphicTargets.cjs.has(importPath)
-        || this.isomorphicTargets.esm.has(importPath)
-        || this.isomorphicTargets.legacy.has(importPath)
-      );
+      relative = path.normalize(importPath);
     }
+
+    const isIsomporhpic = this.isomorphicTargets.cjs.has(relative)
+      || this.isomorphicTargets.esm.has(relative)
+      || this.isomorphicTargets.legacy.has(relative);
+    return isIsomporhpic;
   }
 
   public isIsomorphic(importPath: string): boolean {
     const isAbsolute = path.isAbsolute(importPath);
 
+    let relative: string;
+
     if (isAbsolute) {
-      const relative = ("./"
-        + path.relative(this.srcDir, importPath)) as `./${string}`;
-      return this.isomorphicImports[relative] !== undefined;
+      relative = asRelative(path.relative(this.srcDir, importPath));
     } else {
+      relative = path.normalize(importPath);
+    }
+
+    if (isIndexFile(relative)) {
       return (
-        this.isomorphicImports[path.normalize(importPath) as `./${string}`]
-          !== undefined
+        this.isomorphicImports[relative] != null
+        || this.isomorphicImports[path.dirname(relative)] != null
       );
     }
+
+    return (
+      this.isomorphicImports[relative] != null
+      || possibleIndexes.some(indexName =>
+        this.isomorphicImports[relative + "/" + indexName] != null
+      )
+    );
+  }
+
+  public targetFormats(
+    isomorphicTarget: string,
+  ): Array<"cjs" | "esm" | "legacy"> {
+    const isAbsolute = path.isAbsolute(isomorphicTarget);
+
+    let relative: string;
+    if (isAbsolute) {
+      relative = path.relative(this.srcDir, isomorphicTarget);
+    } else {
+      relative = path.normalize(isomorphicTarget);
+    }
+
+    const formats: Array<"cjs" | "esm" | "legacy"> = [];
+
+    if (this.isomorphicTargets.cjs.has(relative)) {
+      formats.push("cjs");
+    }
+
+    if (this.isomorphicTargets.esm.has(relative)) {
+      formats.push("esm");
+    }
+
+    if (this.isomorphicTargets.legacy.has(relative)) {
+      formats.push("legacy");
+    }
+
+    return formats;
   }
 
   public resolve(importPath: string, format: "cjs" | "esm" | "legacy"): string {
     const isAbsolute = path.isAbsolute(importPath);
 
+    let relative: string;
     if (isAbsolute) {
-      const relative = ("./"
-        + path.relative(this.srcDir, importPath)) as `./${string}`;
-      const importPaths = this.isomorphicImports[relative];
-      return this.getSelectedImportPath(importPaths, importPath, format);
+      relative = asRelative(path.relative(this.srcDir, importPath));
     } else {
-      const importPaths =
-        this.isomorphicImports[path.normalize(importPath) as `./${string}`];
+      relative = path.normalize(importPath);
+    }
+
+    const importPaths = this.isomorphicImports[relative];
+    if (importPaths) {
       return this.getSelectedImportPath(importPaths, importPath, format);
     }
+
+    if (isIndexFile(relative)) {
+      const importPaths = this.isomorphicImports[path.dirname(relative)];
+      if (importPaths) {
+        return this.getSelectedImportPath(importPaths, importPath, format);
+      }
+    } else {
+      for (const index of possibleIndexes) {
+        const importPaths = this.isomorphicImports[relative + "/" + index];
+        if (importPaths) {
+          return this.getSelectedImportPath(importPaths, importPath, format);
+        }
+      }
+    }
+
+    throw new Error("cannot resolve, given path is not isomorphic");
   }
 }

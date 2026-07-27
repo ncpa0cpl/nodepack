@@ -48,15 +48,34 @@ export class Program {
   }
 
   private shouldCompile(filePath: string) {
-    return (
-      this.context.excludes.isNotExcluded(filePath)
-      && (isParsable(
-        this.context.config.get("parsableExtensions", []),
-        filePath,
-      )
-        || this.context.extMap.hasMapping(path.extname(filePath)))
-      && !this.context.isomorphicImports.isIsomorphicTarget(filePath)
+    const isNotExcluded = this.context.excludes.isNotExcluded(filePath);
+    const extMatch = isParsable(
+      this.context.config.get("parsableExtensions", []),
+      filePath,
     );
+    const isMappedExt = this.context.extMap.hasMapping(path.extname(filePath));
+
+    return (
+      isNotExcluded && (extMatch || isMappedExt)
+    );
+  }
+
+  private isForFormat(filePath: string, format: "cjs" | "esm" | "legacy") {
+    const isIsomorphicTarget = this.context.isomorphicImports
+      .isIsomorphicTarget(filePath);
+
+    if (isIsomorphicTarget) {
+      const targetFmts = this.context.isomorphicImports.targetFormats(filePath);
+      const include = targetFmts.includes(format);
+
+      return include;
+    }
+
+    if (this.context.isomorphicImports.isIsomorphic(filePath)) {
+      return false;
+    }
+
+    return true;
   }
 
   private async bundle(builder: Builder) {
@@ -113,15 +132,27 @@ export class Program {
 
   private async buildFiles(builder: Builder, files: string[]) {
     if (this.context.formats.isCjs) {
-      await Promise.all(files.map((file) => builder.build(file, "cjs")));
+      await Promise.all(
+        files
+          .filter(f => this.isForFormat(f, "cjs"))
+          .map((file) => builder.build(file, "cjs")),
+      );
     }
 
     if (this.context.formats.isEsm) {
-      await Promise.all(files.map((file) => builder.build(file, "esm")));
+      await Promise.all(
+        files
+          .filter(f => this.isForFormat(f, "esm"))
+          .map((file) => builder.build(file, "esm")),
+      );
     }
 
     if (this.context.formats.isLegacy) {
-      await Promise.all(files.map((file) => builder.build(file, "legacy")));
+      await Promise.all(
+        files
+          .filter(f => this.isForFormat(f, "legacy"))
+          .map((file) => builder.build(file, "legacy")),
+      );
     }
 
     const vendors = this.context.config.get("compileVendors");

@@ -23,12 +23,29 @@ export class Builder {
     this.vendorBuilder = new VendorBuilder(program, srcDir, outDir);
   }
 
+  resolveOutFile(
+    outDir: string,
+    input: string,
+    ext: string,
+  ) {
+    const srcDir = this.srcDir;
+    const outFilePath = path.join(
+      outDir,
+      path.relative(srcDir, input),
+    );
+    const extMapper = this.program.extMap.withFormat(ext);
+    const inputExt = path.extname(input);
+    const outExt = extMapper.hasMapping(inputExt)
+      ? extMapper.map(inputExt)
+      : ext;
+    return changeExt(outFilePath, outExt);
+  }
+
   private async buildFile(
     actualFilePath: string,
     originalFilePath: string,
     outDir: string,
-    format: esbuild.BuildOptions["format"],
-    ext: string,
+    format: "cjs" | "esm" | "legacy",
     bundle = false,
   ) {
     const {
@@ -37,23 +54,32 @@ export class Builder {
       ...additionalOptions
     } = this.program.config.get("esbuildOptions", {});
 
-    const outFilePath = path.join(
-      outDir,
-      path.relative(this.srcDir, originalFilePath),
-    );
+    let esformat: esbuild.Format;
+    let ext: string;
+
+    switch (format) {
+      case "cjs":
+        esformat = "cjs";
+        ext = ".cjs";
+        break;
+      case "esm":
+        esformat = "esm";
+        ext = ".mjs";
+        break;
+      case "legacy":
+        esformat = "cjs";
+        ext = ".js";
+        break;
+    }
 
     const extMapper = this.program.extMap.withFormat(ext);
 
-    const inputExt = path.extname(actualFilePath);
-    const outExt = extMapper.hasMapping(inputExt)
-      ? extMapper.map(inputExt)
-      : ext;
-
-    const outfile = changeExt(outFilePath, outExt);
+    const outfile = this.resolveOutFile(outDir, originalFilePath, ext);
+    const outExt = path.extname(outfile);
 
     const footerBannerOptions = await this.resolveFootersBanners(
       actualFilePath,
-      format,
+      esformat,
       bundle,
     );
 
@@ -65,10 +91,11 @@ export class Builder {
       target: this.program.config.get("target"),
       tsconfig: this.program.config.get("tsConfig"),
       bundle: true,
-      format,
+      format: esformat,
       plugins: [
         ...additionalPlugins,
         ESbuildPlugin({
+          builder: this,
           program: this.program,
           vendorBuilder: this.vendorBuilder,
           extMapper,
@@ -77,6 +104,7 @@ export class Builder {
           outfile,
           outExt,
           bundle,
+          format,
         }),
       ],
       outExtension: { ".js": outExt },
@@ -154,7 +182,6 @@ export class Builder {
         filePath,
         this.cjsBuildDir,
         "cjs",
-        ".cjs",
         true,
       );
     }
@@ -165,7 +192,6 @@ export class Builder {
         filePath,
         this.esmBuildDir,
         "esm",
-        ".mjs",
         true,
       );
     }
@@ -175,8 +201,7 @@ export class Builder {
         isomorphicPath,
         filePath,
         this.legacyBuildDir,
-        "cjs",
-        ".js",
+        "legacy",
         true,
       );
     }
@@ -193,7 +218,6 @@ export class Builder {
         filePath,
         this.cjsBuildDir,
         "cjs",
-        ".cjs",
       );
     }
 
@@ -203,7 +227,6 @@ export class Builder {
         filePath,
         this.esmBuildDir,
         "esm",
-        ".mjs",
       );
     }
 
@@ -212,8 +235,7 @@ export class Builder {
         isomorphicPath,
         filePath,
         this.legacyBuildDir,
-        "cjs",
-        ".js",
+        "legacy",
       );
     }
 
@@ -224,11 +246,28 @@ export class Builder {
     actualFilePath: string,
     originalFilePath: string,
     outDir: string,
-    format: esbuild.BuildOptions["format"],
-    ext: string,
+    format: "cjs" | "esm" | "legacy",
   ) {
     const { plugins: additionalPlugins = [], ...additionalOptions } = this
       .program.config.get("esbuildOptions", {});
+
+    let esformat: esbuild.Format;
+    let ext: string;
+
+    switch (format) {
+      case "cjs":
+        esformat = "cjs";
+        ext = ".cjs";
+        break;
+      case "esm":
+        esformat = "esm";
+        ext = ".mjs";
+        break;
+      case "legacy":
+        esformat = "cjs";
+        ext = ".js";
+        break;
+    }
 
     const outFilePath = path.join(
       outDir,
@@ -251,10 +290,11 @@ export class Builder {
       target: this.program.config.get("target"),
       tsconfig: this.program.config.get("tsConfig"),
       bundle: true,
-      format,
+      format: esformat,
       plugins: [
         ...additionalPlugins,
         ESbuildPlugin({
+          builder: this,
           program: this.program,
           vendorBuilder: this.vendorBuilder,
           extMapper,
@@ -263,6 +303,7 @@ export class Builder {
           outfile,
           outExt,
           bundle: false,
+          format,
         }),
       ],
       outExtension: { ".js": outExt },
@@ -283,7 +324,6 @@ export class Builder {
         filePath,
         this.cjsBuildDir,
         "cjs",
-        ".cjs",
       );
     }
 
@@ -293,7 +333,6 @@ export class Builder {
         filePath,
         this.esmBuildDir,
         "esm",
-        ".mjs",
       );
     }
 
@@ -302,8 +341,7 @@ export class Builder {
         isomorphicPath,
         filePath,
         this.legacyBuildDir,
-        "cjs",
-        ".js",
+        "legacy",
       );
     }
 

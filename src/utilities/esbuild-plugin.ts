@@ -1,6 +1,7 @@
 import type esbuild from "esbuild";
 import fs from "fs/promises";
 import path from "path";
+import { Builder } from "../builder";
 import type { ProgramContext } from "../program";
 import type { VendorBuilder } from "../vendor-builder";
 import { asRelative } from "./as-relative";
@@ -63,11 +64,13 @@ export const ESbuildPlugin = (params: {
   program: ProgramContext;
   vendorBuilder: VendorBuilder;
   extMapper: ExtensionMapper;
+  builder: Builder;
   srcDir: string;
   outDir: string;
   outfile: string;
   outExt: string;
   bundle: boolean;
+  format: "cjs" | "esm" | "legacy";
 }) => {
   const {
     vendorBuilder,
@@ -78,6 +81,8 @@ export const ESbuildPlugin = (params: {
     outfile,
     outExt,
     bundle,
+    format,
+    builder,
   } = params;
 
   const vendors = program.config.get("compileVendors");
@@ -127,6 +132,36 @@ export const ESbuildPlugin = (params: {
           }
         }
 
+        let absImportPath = path.resolve(args.resolveDir, args.path);
+        const isIsomorphic = program.isomorphicImports.isIsomorphic(
+          absImportPath,
+        );
+        if (isIsomorphic) {
+          const absPath = path.join(
+            srcDir,
+            program.isomorphicImports.resolve(absImportPath, format),
+          );
+          if (bundle) {
+            return await build.resolve(
+              asRelative(path.relative(args.resolveDir, absPath)),
+              resolveOpts(),
+            );
+          }
+
+          const result = builder.resolveOutFile(outDir, absPath, outExt);
+          const outImporter = builder.resolveOutFile(
+            outDir,
+            args.importer,
+            outExt,
+          );
+          return {
+            path: asRelative(
+              path.relative(path.dirname(outImporter), result),
+            ),
+            external: !bundle,
+          };
+        }
+
         if (program.config.isExternal(originalPath)) {
           return {
             external: true,
@@ -153,7 +188,6 @@ export const ESbuildPlugin = (params: {
 
         if (args.importer) {
           let importPath = args.path;
-          let absImportPath = path.resolve(args.resolveDir, importPath);
 
           const isAlias = pathAliases.isAlias(args.path);
           if (isAlias) {

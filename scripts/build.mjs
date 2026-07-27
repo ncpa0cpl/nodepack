@@ -45,8 +45,8 @@ async function main() {
     declarations: true,
     isomorphicImports: {
       "./workers/get-ext": {
-        cjs: "./workers/get-ext/get-ext.cts",
         mjs: "./workers/get-ext/get-ext.mts",
+        cjs: "./workers/get-ext/get-ext.cts",
         js: "./workers/get-ext/get-ext.ts",
       },
       "./workers/get-workers-dir": {
