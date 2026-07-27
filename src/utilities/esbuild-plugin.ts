@@ -97,6 +97,18 @@ export const ESbuildPlugin = (params: {
     name: "nodepack-esbuild-plugin",
     setup(build: esbuild.PluginBuild) {
       build.onResolve({ filter: /.*/ }, async (args) => {
+        const resolveOpts = () => ({
+          importer: args.importer,
+          kind: args.kind,
+          namespace: args.namespace,
+          pluginData: args.pluginData
+            ? Object.assign(args.pluginData, {
+              nodepackResolved: true,
+            })
+            : { nodepackResolved: true },
+          resolveDir: args.resolveDir,
+        });
+
         if (args.pluginData?.nodepackResolved === true) return;
 
         const originalPath = args.path;
@@ -143,7 +155,8 @@ export const ESbuildPlugin = (params: {
           let importPath = args.path;
           let absImportPath = path.resolve(args.resolveDir, importPath);
 
-          if (pathAliases.isAlias(args.path)) {
+          const isAlias = pathAliases.isAlias(args.path);
+          if (isAlias) {
             absImportPath = path.resolve(
               srcDir,
               pathAliases.replaceAliasPattern(args.path),
@@ -184,31 +197,36 @@ export const ESbuildPlugin = (params: {
                 // that directory. So for example:
                 // "./src/Common" gets rewritten to "./src/Common/index.ts"
 
+                const files = await fs.readdir(absImportPath);
+                const indexFile = files.find((f) =>
+                  /^index\.[mc]?(js|ts)$/.test(f)
+                );
+
+                if (!indexFile) {
+                  return {
+                    errors: [
+                      {
+                        text:
+                          `Import points into a directory without a index file: ${absImportPath}`,
+                      },
+                    ],
+                  };
+                }
+
                 if (bundle) {
-                  const files = await fs.readdir(absImportPath);
-                  const indexFile = files.find((f) =>
-                    /^index\.[mc]?(js|ts)$/.test(f)
-                  );
-
-                  if (!indexFile) {
-                    return {
-                      errors: [
-                        {
-                          text:
-                            `Import points into a directory without a index file: ${absImportPath}`,
-                        },
-                      ],
-                    };
-                  }
-
                   // For bundling the filepaths need to be absolute
                   return {
                     path: path.join(absImportPath, indexFile),
                   };
                 }
 
+                const p = path.join(
+                  importPath,
+                  indexFile,
+                );
+
                 return {
-                  path: path.join(importPath, `index${extMapper.getDefault()}`),
+                  path: path.isAbsolute(importPath) ? p : asRelative(p),
                   external: true,
                 };
               } else {
@@ -236,17 +254,7 @@ export const ESbuildPlugin = (params: {
           } else {
             if (bundle) {
               // For bundling the filepaths need to be absolute
-              return build.resolve(args.path, {
-                importer: args.importer,
-                kind: args.kind,
-                namespace: args.namespace,
-                pluginData: args.pluginData
-                  ? Object.assign(args.pluginData, {
-                    nodepackResolved: true,
-                  })
-                  : { nodepackResolved: true },
-                resolveDir: args.resolveDir,
-              });
+              return build.resolve(args.path, resolveOpts());
             }
 
             return {

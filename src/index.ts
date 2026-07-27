@@ -12,6 +12,8 @@ export async function build(config: BuildConfig) {
   try {
     config = validateBuildConfig(config);
 
+    debugger;
+
     ensureAbsolutePath(config.srcDir);
     ensureAbsolutePath(config.outDir);
     if (config.tsConfig) {
