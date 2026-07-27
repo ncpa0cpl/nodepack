@@ -1,5 +1,6 @@
 import { WorkerBridge } from "@ncpa0cpl/node-worker-bridge";
 import { createProject, ts } from "@ts-morph/bootstrap";
+import { ScriptTarget } from "../utilities/map-compiler-target";
 import { ext } from "./get-ext";
 import { dir } from "./get-workers-dir";
 
@@ -19,8 +20,8 @@ export const TsProjectWorker = WorkerBridge(
         skipAddingFilesFromTsConfig: true,
         compilerOptions: {
           target: decorators === "experimental"
-            ? ts.ScriptTarget.ESNext
-            : ts.ScriptTarget.ES2022,
+            ? ScriptTarget.ESNext
+            : ScriptTarget.ES2022,
           experimentalDecorators: decorators === "experimental",
           emitDecoratorMetadata: decorators === "experimental",
           sourceMap: false,
