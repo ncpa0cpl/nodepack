@@ -18,7 +18,8 @@
     "test:tsc": "tsc --noEmit",
     "build": "node ./scripts/build.cjs",
     "upgrade:deps": "node ./scripts/upgrade.mjs",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "release": "git switch master && git push && git switch release && git rebase master && git push && git switch master"
   },
   "keywords": [
     "esbuild",
