@@ -1,11 +1,14 @@
 name: Release Package
 
 permissions:
+  id-token: write # Required for OIDC
+  contents: read
   repository-projects: write
 
 on:
-  release:
-    types: [created]
+  push:
+    branches:
+      - release
 
 env:
   NPM_TOKEN: ""
@@ -13,6 +16,7 @@ env:
 jobs:
   build-and-publish:
     permissions:
+      id-token: write # Required for OIDC
       packages: write
       contents: write
       pull-requests: write
@@ -20,13 +24,16 @@ jobs:
       repository-projects: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           ref: master
           token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v6
         with:
-          node-version: 18
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+      - name: Update npm
+        run: npm install -g npm@latest
       - name: Installing dependencies
         run: ./.yarn/releases/yarn-1.22.19.cjs
       - name: Validating TypeScript
@@ -34,7 +41,4 @@ jobs:
       - name: Building package
         run: ./.yarn/releases/yarn-1.22.19.cjs build
       - name: Publish
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_AUTOMATION_TOKEN }}
-          TAG_NAME: ${{ github.event.release.tag_name }}
-        run: ./scripts/publish.sh
+        run: npm publish --access public

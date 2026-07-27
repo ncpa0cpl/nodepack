@@ -3,7 +3,7 @@ export class ExtensionMapper {
 
   constructor(
     extMap: { [ext: string]: string },
-    private readonly format?: string
+    private readonly format?: string,
   ) {
     const option = { ...extMap };
 

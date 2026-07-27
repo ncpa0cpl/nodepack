@@ -12,7 +12,7 @@ export class DeclarationBuilder {
   constructor(
     private program: ProgramContext,
     private srcDir: string,
-    outDir: string
+    outDir: string,
   ) {
     this.outDir = path.join(outDir, "types");
   }
@@ -35,11 +35,11 @@ export class DeclarationBuilder {
   private async buildJsonDeclarations() {
     let jsonToDts:
       | ((
-          json: any,
-          userOptions?: {
-            rootName: string;
-          }
-        ) => string[])
+        json: any,
+        userOptions?: {
+          rootName: string;
+        },
+      ) => string[])
       | undefined = undefined;
 
     try {
@@ -50,7 +50,7 @@ export class DeclarationBuilder {
       }
     } catch (e) {
       console.warn(
-        'Declarations for JSON files cannot be generated. Install the "json-to-ts" package to enable this feature.'
+        "Declarations for JSON files cannot be generated. Install the \"json-to-ts\" package to enable this feature.",
       );
       return;
     }
@@ -60,7 +60,7 @@ export class DeclarationBuilder {
       for (const file of files) {
         const relativePath = path.relative(
           this.srcDir,
-          path.join(root, file.name)
+          path.join(root, file.name),
         );
         const outFilePath = path.join(this.outDir, relativePath);
 
@@ -73,11 +73,11 @@ export class DeclarationBuilder {
                   // @ts-ignore
                   jsonToDts(JSON.parse(content), {
                     rootName: "Default",
-                  }).join("\n") + "\nexport default Default;"
+                  }).join("\n") + "\nexport default Default;",
               )
               .then((dt) => {
                 fs.writeFile(outFilePath + ".d.ts", dt);
-              })
+              }),
           );
         }
       }

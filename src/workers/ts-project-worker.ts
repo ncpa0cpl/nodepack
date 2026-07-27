@@ -12,16 +12,15 @@ export const TsProjectWorker = WorkerBridge(
   (main: MainThread) => {
     const getProject = async (
       decorators: "experimental" | "es",
-      options?: Partial<ts.CompilerOptions>
+      options?: Partial<ts.CompilerOptions>,
     ) => {
       return await createProject({
         tsConfigFilePath: await main.getTsConfig(),
         skipAddingFilesFromTsConfig: true,
         compilerOptions: {
-          target:
-            decorators === "experimental"
-              ? ts.ScriptTarget.ESNext
-              : ts.ScriptTarget.ES2022,
+          target: decorators === "experimental"
+            ? ts.ScriptTarget.ESNext
+            : ts.ScriptTarget.ES2022,
           experimentalDecorators: decorators === "experimental",
           emitDecoratorMetadata: decorators === "experimental",
           sourceMap: false,
@@ -42,12 +41,12 @@ export const TsProjectWorker = WorkerBridge(
     }) => {
       const project = await getProject(
         params.decorators,
-        params.compilerOptions
+        params.compilerOptions,
       );
 
       const sourceFile = project.createSourceFile(
         params.filePath,
-        params.fileContent
+        params.fileContent,
       );
 
       const program = project.createProgram();
@@ -75,10 +74,10 @@ export const TsProjectWorker = WorkerBridge(
         undefined,
         undefined,
         undefined,
-        /* emitOnlyDtsFiles */ true
+        /* emitOnlyDtsFiles */ true,
       );
     };
 
     return { emitDeclarations, parseFile };
-  }
+  },
 );

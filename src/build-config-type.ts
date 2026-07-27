@@ -1,4 +1,4 @@
-import type { GetDataType } from "dilswer";
+import type { Infer } from "dilswer";
 import type { buildConfigSchema } from "./build-config";
 
-export type BuildConfig = GetDataType<typeof buildConfigSchema>;
+export type BuildConfig = Infer<typeof buildConfigSchema>;

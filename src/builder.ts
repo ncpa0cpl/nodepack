@@ -15,7 +15,7 @@ export class Builder {
   constructor(
     private program: ProgramContext,
     private srcDir: string,
-    outDir: string
+    outDir: string,
   ) {
     this.cjsBuildDir = path.resolve(outDir, "cjs");
     this.esmBuildDir = path.resolve(outDir, "esm");
@@ -29,7 +29,7 @@ export class Builder {
     outDir: string,
     format: esbuild.BuildOptions["format"],
     ext: string,
-    bundle = false
+    bundle = false,
   ) {
     const {
       plugins: additionalPlugins = [],
@@ -39,7 +39,7 @@ export class Builder {
 
     const outFilePath = path.join(
       outDir,
-      path.relative(this.srcDir, originalFilePath)
+      path.relative(this.srcDir, originalFilePath),
     );
 
     const extMapper = this.program.extMap.withFormat(ext);
@@ -54,7 +54,7 @@ export class Builder {
     const footerBannerOptions = await this.resolveFootersBanners(
       actualFilePath,
       format,
-      bundle
+      bundle,
     );
 
     const r = await esbuild.build({
@@ -88,7 +88,7 @@ export class Builder {
   private async resolveFootersBanners(
     filepath: string,
     format: esbuild.BuildOptions["format"],
-    bundle: boolean
+    bundle: boolean,
   ): Promise<{
     footer: Record<string, string>;
     banner: Record<string, string>;
@@ -97,12 +97,12 @@ export class Builder {
       const footers = await Promise.all(
         Object.values(this.program.config.get("footer", {})).map((f) =>
           loadFooterBanner(this.program, format, f)
-        )
+        ),
       );
       const banners = await Promise.all(
         Object.values(this.program.config.get("banner", {})).map((f) =>
           loadFooterBanner(this.program, format, f)
-        )
+        ),
       );
 
       return {
@@ -129,14 +129,14 @@ export class Builder {
 
   private resolveIsomorphicImport(
     filePath: string,
-    format: "cjs" | "esm" | "legacy"
+    format: "cjs" | "esm" | "legacy",
   ) {
     const relativeToSrc = path.relative(this.srcDir, filePath);
 
     if (this.program.isomorphicImports.isIsomorphic(relativeToSrc)) {
       const replacement = this.program.isomorphicImports.resolve(
         relativeToSrc,
-        format
+        format,
       );
 
       return path.resolve(this.srcDir, replacement);
@@ -155,7 +155,7 @@ export class Builder {
         this.cjsBuildDir,
         "cjs",
         ".cjs",
-        true
+        true,
       );
     }
 
@@ -166,7 +166,7 @@ export class Builder {
         this.esmBuildDir,
         "esm",
         ".mjs",
-        true
+        true,
       );
     }
 
@@ -177,7 +177,7 @@ export class Builder {
         this.legacyBuildDir,
         "cjs",
         ".js",
-        true
+        true,
       );
     }
 
@@ -193,7 +193,7 @@ export class Builder {
         filePath,
         this.cjsBuildDir,
         "cjs",
-        ".cjs"
+        ".cjs",
       );
     }
 
@@ -203,7 +203,7 @@ export class Builder {
         filePath,
         this.esmBuildDir,
         "esm",
-        ".mjs"
+        ".mjs",
       );
     }
 
@@ -213,7 +213,7 @@ export class Builder {
         filePath,
         this.legacyBuildDir,
         "cjs",
-        ".js"
+        ".js",
       );
     }
 
@@ -225,14 +225,14 @@ export class Builder {
     originalFilePath: string,
     outDir: string,
     format: esbuild.BuildOptions["format"],
-    ext: string
+    ext: string,
   ) {
-    const { plugins: additionalPlugins = [], ...additionalOptions } =
-      this.program.config.get("esbuildOptions", {});
+    const { plugins: additionalPlugins = [], ...additionalOptions } = this
+      .program.config.get("esbuildOptions", {});
 
     const outFilePath = path.join(
       outDir,
-      path.relative(this.srcDir, originalFilePath)
+      path.relative(this.srcDir, originalFilePath),
     );
 
     const extMapper = this.program.extMap.withFormat(ext);
@@ -283,7 +283,7 @@ export class Builder {
         filePath,
         this.cjsBuildDir,
         "cjs",
-        ".cjs"
+        ".cjs",
       );
     }
 
@@ -293,7 +293,7 @@ export class Builder {
         filePath,
         this.esmBuildDir,
         "esm",
-        ".mjs"
+        ".mjs",
       );
     }
 
@@ -303,7 +303,7 @@ export class Builder {
         filePath,
         this.legacyBuildDir,
         "cjs",
-        ".js"
+        ".js",
       );
     }
 

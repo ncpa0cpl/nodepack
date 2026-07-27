@@ -8,12 +8,12 @@
         "script": "test:tsc"
       },
       {
-        "name": "ESLint",
+        "name": "Lint",
         "script": "test:lint"
       },
       {
-        "name": "Prettier",
-        "script": "test:prettier"
+        "name": "Formatting",
+        "script": "test:fmt"
       }
     ],
     "pre-commit": [],

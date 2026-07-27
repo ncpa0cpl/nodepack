@@ -46,14 +46,13 @@ export async function build(config: BuildConfig) {
         .removeAllAliases()
         .skip((line) => {
           return line.path
-            ? line.path.startsWith("internal") ||
-                line.path.startsWith("node:internal")
+            ? line.path.startsWith("internal")
+              || line.path.startsWith("node:internal")
             : false;
         })
         .filter((line) => {
-          line.shortenedAddr =
-            "./" +
-            path.relative(process.cwd(), line.addr.replace(/^file:\/\//, ""));
+          line.shortenedAddr = "./"
+            + path.relative(process.cwd(), line.addr.replace(/^file:\/\//, ""));
           return true;
         });
 

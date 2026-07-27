@@ -8,7 +8,7 @@ import type { FooterBanner } from "./config-helper";
 export const loadFooterBanner = async (
   program: ProgramContext,
   format: esbuild.BuildOptions["format"],
-  footerBanner: FooterBanner
+  footerBanner: FooterBanner,
 ) => {
   const tsOptions: Partial<ts.CompilerOptions> = {
     target: 2, // ES2015
@@ -48,7 +48,7 @@ export const loadFooterBanner = async (
     const srcdir = program.config.get("srcDir");
     const fileContent = await readFile(
       path.resolve(srcdir, footerBanner.file),
-      "utf-8"
+      "utf-8",
     );
 
     switch (footerBanner.loader) {

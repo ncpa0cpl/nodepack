@@ -10,25 +10,26 @@ export class PathAliasResolver {
       ([pattern, aliasValue]) => [
         pattern.replace(/\/\*$/, ""),
         aliasValue.replace(/\/\*$/, "").replace(/^.\//, ""),
-      ]
+      ],
     );
   }
 
   private validatePathAliases(): void {
-    if (this.pathAliases)
+    if (this.pathAliases) {
       for (const [key, value] of Object.entries(this.pathAliases)) {
         if (!key.endsWith("/*")) {
           throw new Error(
-            'Each path alias must end with a "/*", other patterns are not supported yet.'
+            "Each path alias must end with a \"/*\", other patterns are not supported yet.",
           );
         }
 
         if (!value.startsWith("./") || !value.endsWith("/*")) {
           throw new Error(
-            'Each path alias value must be have a "./" prefix and end with a "/*" suffix.'
+            "Each path alias value must be have a \"./\" prefix and end with a \"/*\" suffix.",
           );
         }
       }
+    }
   }
 
   private getAliasFor(path: string): [string, string] {

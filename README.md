@@ -38,13 +38,13 @@
 1. Intall this package and `esbuild` using _yarn_ or _npm_:
 
    ```sh
-     npm i -D esbuild @ncpa0cpl/nodepack
+   npm i -D esbuild @ncpa0cpl/nodepack
    ```
 
    or
 
    ```sh
-     yarn add -D esbuild @ncpa0cpl/nodepack
+   yarn add -D esbuild @ncpa0cpl/nodepack
    ```
 
 2. (Optional) If you want to be able to generate TypeScript declarations also install `typescript`.

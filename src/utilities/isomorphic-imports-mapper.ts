@@ -13,15 +13,18 @@ export class IsomorphicImportsMapper {
       BuildConfig["isomorphicImports"],
       undefined
     >,
-    private readonly srcDir: string
+    private readonly srcDir: string,
   ) {
     for (const paths of Object.values(isomorphicImports)) {
-      if (paths.cjs !== undefined)
+      if (paths.cjs !== undefined) {
         this.isomorphicTargets.cjs.add(path.normalize(paths.cjs));
-      if (paths.mjs !== undefined)
+      }
+      if (paths.mjs !== undefined) {
         this.isomorphicTargets.esm.add(path.normalize(paths.mjs));
-      if (paths.js !== undefined)
+      }
+      if (paths.js !== undefined) {
         this.isomorphicTargets.legacy.add(path.normalize(paths.js));
+      }
     }
 
     // normalize isomorphicImports keys
@@ -37,7 +40,7 @@ export class IsomorphicImportsMapper {
   private getSelectedImportPath(
     paths: undefined | (typeof this.isomorphicImports)[`./${string}`],
     importPath: string,
-    format: "cjs" | "esm" | "legacy"
+    format: "cjs" | "esm" | "legacy",
   ) {
     if (path === undefined) {
       throw new Error(`No isomorphic import path found for ${importPath}`);
@@ -58,16 +61,16 @@ export class IsomorphicImportsMapper {
     if (isAbsolute) {
       const relative = path.relative(this.srcDir, importPath);
       return (
-        this.isomorphicTargets.cjs.has(relative) ||
-        this.isomorphicTargets.esm.has(relative) ||
-        this.isomorphicTargets.legacy.has(relative)
+        this.isomorphicTargets.cjs.has(relative)
+        || this.isomorphicTargets.esm.has(relative)
+        || this.isomorphicTargets.legacy.has(relative)
       );
     } else {
       importPath = path.normalize(importPath);
       return (
-        this.isomorphicTargets.cjs.has(importPath) ||
-        this.isomorphicTargets.esm.has(importPath) ||
-        this.isomorphicTargets.legacy.has(importPath)
+        this.isomorphicTargets.cjs.has(importPath)
+        || this.isomorphicTargets.esm.has(importPath)
+        || this.isomorphicTargets.legacy.has(importPath)
       );
     }
   }
@@ -76,13 +79,13 @@ export class IsomorphicImportsMapper {
     const isAbsolute = path.isAbsolute(importPath);
 
     if (isAbsolute) {
-      const relative = ("./" +
-        path.relative(this.srcDir, importPath)) as `./${string}`;
+      const relative = ("./"
+        + path.relative(this.srcDir, importPath)) as `./${string}`;
       return this.isomorphicImports[relative] !== undefined;
     } else {
       return (
-        this.isomorphicImports[path.normalize(importPath) as `./${string}`] !==
-        undefined
+        this.isomorphicImports[path.normalize(importPath) as `./${string}`]
+          !== undefined
       );
     }
   }
@@ -91,8 +94,8 @@ export class IsomorphicImportsMapper {
     const isAbsolute = path.isAbsolute(importPath);
 
     if (isAbsolute) {
-      const relative = ("./" +
-        path.relative(this.srcDir, importPath)) as `./${string}`;
+      const relative = ("./"
+        + path.relative(this.srcDir, importPath)) as `./${string}`;
       const importPaths = this.isomorphicImports[relative];
       return this.getSelectedImportPath(importPaths, importPath, format);
     } else {

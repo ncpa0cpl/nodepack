@@ -1,7 +1,7 @@
 const trimChar = (
   str: string,
   char: string,
-  direction: "left" | "right"
+  direction: "left" | "right",
 ): string => {
   const fromLeft = direction === "left";
   let result = str;

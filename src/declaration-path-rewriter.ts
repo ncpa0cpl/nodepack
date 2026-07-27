@@ -8,7 +8,7 @@ import { CodeLine } from "./utilities/code-line";
 export class DeclarationPathRewriter {
   constructor(
     private program: ProgramContext,
-    private readonly typesDir: string
+    private readonly typesDir: string,
   ) {}
 
   /**
@@ -19,7 +19,7 @@ export class DeclarationPathRewriter {
     if (this.program.pathAliases.isAlias(importPath)) {
       const absImportPath = path.resolve(
         this.typesDir,
-        this.program.pathAliases.replaceAliasPattern(importPath)
+        this.program.pathAliases.replaceAliasPattern(importPath),
       );
       const newImport = asRelative(path.relative(resolveDir, absImportPath));
       return newImport;
@@ -48,8 +48,8 @@ export class DeclarationPathRewriter {
    * real paths.
    */
   private rewriteLine(line: string, resolveDir: string): string {
-    const [, , importPath] =
-      line.match(/(import|export).+?from\s+"(.+?)"/) ?? [];
+    const [, , importPath] = line.match(/(import|export).+?from\s+"(.+?)"/)
+      ?? [];
 
     if (importPath && this.program.pathAliases.isAlias(importPath)) {
       const newImport = this.rewritePath(importPath, resolveDir);
@@ -83,7 +83,7 @@ export class DeclarationPathRewriter {
       for (const file of files) {
         if (file.name.endsWith(".d.ts")) {
           rewriteOperations.push(
-            this.rewriteImportInFile(path.resolve(root, file.name))
+            this.rewriteImportInFile(path.resolve(root, file.name)),
           );
         }
       }

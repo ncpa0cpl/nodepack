@@ -82,17 +82,16 @@ export const ESbuildPlugin = (params: {
 
   const vendors = program.config.get("compileVendors");
   const importReplace = new Map(
-    Object.entries(program.config.get("replaceImports") ?? {})
+    Object.entries(program.config.get("replaceImports") ?? {}),
   );
 
   const { pathAliases, tsProgram, config: buildConfig } = program;
 
-  const onVendorFound =
-    vendors === "all"
-      ? (vendor: string) => {
-          vendorBuilder.addVendors([vendor]);
-        }
-      : (_: string) => {};
+  const onVendorFound = vendors === "all"
+    ? (vendor: string) => {
+      vendorBuilder.addVendors([vendor]);
+    }
+    : (_: string) => {};
 
   return {
     name: "nodepack-esbuild-plugin",
@@ -108,7 +107,7 @@ export const ESbuildPlugin = (params: {
           if (replaceWith.startsWith(".")) {
             const fromImporterToReplacement = path.relative(
               path.dirname(outfile),
-              path.resolve(srcDir, replaceWith)
+              path.resolve(srcDir, replaceWith),
             );
             args.path = fromImporterToReplacement;
           } else {
@@ -133,9 +132,9 @@ export const ESbuildPlugin = (params: {
                 path.resolve(
                   outDir,
                   program.vendorsDir,
-                  `${args.path}${outExt}`
-                )
-              )
+                  `${args.path}${outExt}`,
+                ),
+              ),
             ),
           };
         }
@@ -147,11 +146,11 @@ export const ESbuildPlugin = (params: {
           if (pathAliases.isAlias(args.path)) {
             absImportPath = path.resolve(
               srcDir,
-              pathAliases.replaceAliasPattern(args.path)
+              pathAliases.replaceAliasPattern(args.path),
             );
 
             importPath = asRelative(
-              path.relative(args.resolveDir, absImportPath)
+              path.relative(args.resolveDir, absImportPath),
             );
           }
 
@@ -195,7 +194,8 @@ export const ESbuildPlugin = (params: {
                     return {
                       errors: [
                         {
-                          text: `Import points into a directory without a index file: ${absImportPath}`,
+                          text:
+                            `Import points into a directory without a index file: ${absImportPath}`,
                         },
                       ],
                     };
@@ -242,8 +242,8 @@ export const ESbuildPlugin = (params: {
                 namespace: args.namespace,
                 pluginData: args.pluginData
                   ? Object.assign(args.pluginData, {
-                      nodepackResolved: true,
-                    })
+                    nodepackResolved: true,
+                  })
                   : { nodepackResolved: true },
                 resolveDir: args.resolveDir,
               });
@@ -269,9 +269,9 @@ export const ESbuildPlugin = (params: {
 
           const cachedFile = esDecoratorsCompileCache.get(args.path);
           if (cachedFile) {
-            if (cachedFile.hasDecorators === false)
+            if (cachedFile.hasDecorators === false) {
               return { contents: cachedFile.originalSourceFile, loader };
-            else return { contents: await cachedFile.transpiledFile, loader };
+            } else return { contents: await cachedFile.transpiledFile, loader };
           }
 
           const fileContent = await fs.readFile(args.path, "utf-8");
@@ -307,9 +307,9 @@ export const ESbuildPlugin = (params: {
 
           const cachedFile = experimentalDecoratorsCompileCache.get(args.path);
           if (cachedFile) {
-            if (cachedFile.hasDecorators === false)
+            if (cachedFile.hasDecorators === false) {
               return { contents: cachedFile.originalSourceFile, loader };
-            else return { contents: await cachedFile.transpiledFile, loader };
+            } else return { contents: await cachedFile.transpiledFile, loader };
           }
 
           const fileContent = await fs.readFile(args.path, "utf-8");

@@ -16,15 +16,14 @@ export const VendorBuilderPlugin = (params: {
 
   const vendors = program.config.get("compileVendors");
   const importReplace = new Map(
-    Object.entries(program.config.get("replaceImports") ?? {})
+    Object.entries(program.config.get("replaceImports") ?? {}),
   );
 
-  const onVendorFound =
-    vendors === "all"
-      ? (vendor: string) => {
-          vendorBuilder.addVendors([vendor]);
-        }
-      : (_: string) => {};
+  const onVendorFound = vendors === "all"
+    ? (vendor: string) => {
+      vendorBuilder.addVendors([vendor]);
+    }
+    : (_: string) => {};
 
   return {
     name: "nodepack-vendor-builder-plugin",
@@ -51,7 +50,7 @@ export const VendorBuilderPlugin = (params: {
           if (replaceWith.startsWith(".")) {
             const fromOutfileToReplacement = path.relative(
               path.dirname(outfile),
-              path.resolve(srcDir, replaceWith)
+              path.resolve(srcDir, replaceWith),
             );
             args.path = fromOutfileToReplacement;
           } else {

@@ -7,11 +7,11 @@ import test from "./test.custom";
 import text from "./text-file.txt";
 
 export {
-  Model,
-  file,
-  text,
   data,
-  test,
+  file,
+  Model,
   T,
+  test,
+  text,
   //
 };

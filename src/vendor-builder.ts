@@ -15,7 +15,7 @@ export class VendorBuilder {
   constructor(
     private program: ProgramContext,
     private srcDir: string,
-    outDir: string
+    outDir: string,
   ) {
     this.cjsBuildDir = path.resolve(outDir, "cjs");
     this.esmBuildDir = path.resolve(outDir, "esm");
@@ -26,7 +26,7 @@ export class VendorBuilder {
     this.buildJobs.push(
       job.finally(() => {
         this.jobsFinished++;
-      })
+      }),
     );
   }
 
@@ -43,22 +43,22 @@ export class VendorBuilder {
     vendorName: string,
     outDir: string,
     format: esbuild.BuildOptions["format"],
-    ext: string
+    ext: string,
   ) {
-    const { plugins: additionalPlugins = [], ...additionalOptions } =
-      this.program.config.get("esbuildOptions", {});
+    const { plugins: additionalPlugins = [], ...additionalOptions } = this
+      .program.config.get("esbuildOptions", {});
 
     const outpath = path.resolve(
       outDir,
       this.program.vendorsDir,
-      `${vendorName}${ext}`
+      `${vendorName}${ext}`,
     );
 
     const entrypointFilepath = this.getVendorProxyFilePath(format);
 
     const footerBannerOptions = await this.resolveFootersBanners(
       vendorName,
-      format
+      format,
     );
 
     const r = await esbuild.build({
@@ -89,7 +89,7 @@ export class VendorBuilder {
 
   private async resolveFootersBanners(
     filepath: string,
-    format: esbuild.BuildOptions["format"]
+    format: esbuild.BuildOptions["format"],
   ): Promise<{
     footer: Record<string, string>;
     banner: Record<string, string>;
@@ -115,7 +115,7 @@ export class VendorBuilder {
       return Promise.all(
         vendors.map((v) =>
           this.buildVendorFile(v, this.cjsBuildDir, "cjs", ".cjs")
-        )
+        ),
       );
     }
 
@@ -123,7 +123,7 @@ export class VendorBuilder {
       return Promise.all(
         vendors.map((v) =>
           this.buildVendorFile(v, this.esmBuildDir, "esm", ".mjs")
-        )
+        ),
       );
     }
 
@@ -131,7 +131,7 @@ export class VendorBuilder {
       return Promise.all(
         vendors.map((v) =>
           this.buildVendorFile(v, this.legacyBuildDir, "cjs", ".js")
-        )
+        ),
       );
     }
 

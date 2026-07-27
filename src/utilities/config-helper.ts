@@ -12,7 +12,7 @@ type MergeWithCustomizer = {
     srcValue: any,
     key: string,
     object: any,
-    source: any
+    source: any,
   ): any;
 }["bivariantHack"];
 
@@ -119,11 +119,11 @@ export class ConfigHelper {
   get<K extends keyof BuildConfig>(configProperty: K): BuildConfig[K];
   get<K extends keyof BuildConfig>(
     configProperty: K,
-    defaultValue: BuildConfig[K]
+    defaultValue: BuildConfig[K],
   ): Defined<BuildConfig[K]>;
   get<K extends keyof BuildConfig>(
     configProperty: K,
-    defaultValue?: BuildConfig[K]
+    defaultValue?: BuildConfig[K],
   ) {
     return this.config[configProperty] ?? defaultValue;
   }

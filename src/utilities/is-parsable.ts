@@ -3,12 +3,12 @@ import { PARSABLE_EXTENSIONS } from "./parsable-extensions";
 
 export const isParsable = (
   additionalParsableExtensions: string[],
-  filePath: string
+  filePath: string,
 ): boolean => {
   const normalizedExt = path.extname(filePath).toLowerCase();
   if (
-    !PARSABLE_EXTENSIONS.includes(normalizedExt) &&
-    !additionalParsableExtensions.includes(normalizedExt)
+    !PARSABLE_EXTENSIONS.includes(normalizedExt)
+    && !additionalParsableExtensions.includes(normalizedExt)
   ) {
     return false;
   }

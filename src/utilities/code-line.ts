@@ -23,15 +23,15 @@ export class CodeLine {
   }
 
   private findImportPositions(
-    line: string
+    line: string,
   ): Array<[start: number, end: number]> {
     const startPositions: Array<number> = [];
 
     let p = -1;
     while (
       (p = line.indexOf(
-        'import("',
-        startPositions[startPositions.length - 1]! + 1
+        "import(\"",
+        startPositions[startPositions.length - 1]! + 1,
       )) !== -1
     ) {
       startPositions.push(p);
@@ -40,7 +40,7 @@ export class CodeLine {
     const positions: Array<[start: number, end: number]> = [];
 
     for (const start of startPositions) {
-      const end = line.indexOf('")', start);
+      const end = line.indexOf("\")", start);
       positions.push([start, end + 2]);
     }
 
@@ -56,8 +56,8 @@ export class CodeLine {
       this.lineParts.push(
         new Import(
           this.line.slice(start + 8, end - 2),
-          this.line.slice(start + 7, start + 8)
-        )
+          this.line.slice(start + 7, start + 8),
+        ),
       );
       s = end;
     }
@@ -66,7 +66,7 @@ export class CodeLine {
 
   get imports(): Array<Import> {
     return this.lineParts.filter(
-      (part): part is Import => typeof part === "object"
+      (part): part is Import => typeof part === "object",
     );
   }
 

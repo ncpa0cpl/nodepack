@@ -1,6 +1,6 @@
 // @ts-ignore
 const path = require("path");
-const { toTsType, getMetadata } = require("dilswer");
+const { toTsType } = require("dilswer");
 const { build } = require("../node_modules/@ncpa0cpl/nodepack");
 const fs = require("fs/promises");
 
@@ -14,7 +14,7 @@ async function buildConfigTypes() {
     exports: "named",
     mode: "named-expanded",
     getExternalTypeImport(type) {
-      const meta = getMetadata(type);
+      const meta = type.meta.get();
 
       if (meta.extra?.type) {
         if (meta.extra.importFrom) {

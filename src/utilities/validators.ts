@@ -7,7 +7,7 @@ export const isValidExtension = (ext: any) => {
 };
 
 export const isValidExtMapping = (
-  extMapping: unknown
+  extMapping: unknown,
 ): extMapping is ExtMapping => {
   if (typeof extMapping === "object" && extMapping !== null) {
     for (const [key, value] of Object.entries(extMapping)) {
@@ -36,7 +36,7 @@ export const isValidPathAliasMap = (map: unknown): map is PathAliasMap => {
 };
 
 export const isRecordWithRelativeKeys = (
-  r: unknown
+  r: unknown,
 ): r is Record<string, {}> => {
   if (typeof r === "object" && r !== null) {
     return Object.keys(r).every((key) => isRelative(key));

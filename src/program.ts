@@ -41,7 +41,7 @@ export class Program {
       tsProgram: getTsWorkerPool(config.tsConfig),
       isomorphicImports: new IsomorphicImportsMapper(
         config.isomorphicImports ?? {},
-        config.srcDir
+        config.srcDir,
       ),
       vendorsDir: "_vendors",
     };
@@ -49,26 +49,26 @@ export class Program {
 
   private shouldCompile(filePath: string) {
     return (
-      this.context.excludes.isNotExcluded(filePath) &&
-      (isParsable(
+      this.context.excludes.isNotExcluded(filePath)
+      && (isParsable(
         this.context.config.get("parsableExtensions", []),
-        filePath
-      ) ||
-        this.context.extMap.hasMapping(path.extname(filePath))) &&
-      !this.context.isomorphicImports.isIsomorphicTarget(filePath)
+        filePath,
+      )
+        || this.context.extMap.hasMapping(path.extname(filePath)))
+      && !this.context.isomorphicImports.isIsomorphicTarget(filePath)
     );
   }
 
   private async bundle(builder: Builder) {
     if (typeof this.context.config.get("entrypoint") !== "string") {
       throw new Error(
-        "`entrypoint` must be provided when bundling is enabled."
+        "`entrypoint` must be provided when bundling is enabled.",
       );
     }
 
     const entrypointPath = path.resolve(
       this.context.config.get("srcDir"),
-      this.context.config.get("entrypoint")!
+      this.context.config.get("entrypoint")!,
     );
 
     if (this.context.formats.isCjs) {
@@ -94,9 +94,11 @@ export class Program {
   private async build(builder: Builder) {
     const filesForCompilation: string[] = [];
 
-    for await (const [root, _, files] of walk(
-      this.context.config.get("srcDir")
-    )) {
+    for await (
+      const [root, _, files] of walk(
+        this.context.config.get("srcDir"),
+      )
+    ) {
       for (const file of files) {
         const filePath = path.join(root, file.name);
 
@@ -134,7 +136,7 @@ export class Program {
     const builder = new Builder(
       this.context,
       this.context.config.get("srcDir"),
-      this.context.config.get("outDir")
+      this.context.config.get("outDir"),
     );
 
     if (this.context.config.get("bundle")) {
@@ -148,7 +150,7 @@ export class Program {
     const declarationBuilder = new DeclarationBuilder(
       this.context,
       this.context.config.get("srcDir"),
-      this.context.config.get("outDir")
+      this.context.config.get("outDir"),
     );
 
     await declarationBuilder.build();
@@ -156,7 +158,7 @@ export class Program {
     if (this.context.config.get("pathAliases")) {
       const declarationPathRewriter = new DeclarationPathRewriter(
         this.context,
-        declarationBuilder.getOutDir()
+        declarationBuilder.getOutDir(),
       );
 
       await declarationPathRewriter.rewrite();
@@ -169,7 +171,7 @@ export class Program {
     const builder = new Builder(
       this.context,
       this.context.config.get("srcDir"),
-      this.context.config.get("outDir")
+      this.context.config.get("outDir"),
     );
 
     const onBuildComplete = this.context.config.get("onBuildComplete") as
@@ -203,7 +205,7 @@ export class Program {
       .on("all", async (event, fpath) => {
         if (event !== "addDir" && this.shouldCompile(fpath)) {
           console.log(
-            `Detected change in ${path.basename(fpath)}, rebuilding...`
+            `Detected change in ${path.basename(fpath)}, rebuilding...`,
           );
 
           try {
