@@ -23,6 +23,15 @@ export class Builder {
     this.vendorBuilder = new VendorBuilder(program, srcDir, outDir);
   }
 
+  withMappedExt(fpath: string, ext: string) {
+    const extMapper = this.program.extMap.withFormat(ext);
+    const inputExt = path.extname(fpath);
+    const outExt = extMapper.hasMapping(inputExt)
+      ? extMapper.map(inputExt)
+      : ext;
+    return changeExt(fpath, outExt);
+  }
+
   resolveOutFile(
     outDir: string,
     input: string,
@@ -33,12 +42,7 @@ export class Builder {
       outDir,
       path.relative(srcDir, input),
     );
-    const extMapper = this.program.extMap.withFormat(ext);
-    const inputExt = path.extname(input);
-    const outExt = extMapper.hasMapping(inputExt)
-      ? extMapper.map(inputExt)
-      : ext;
-    return changeExt(outFilePath, outExt);
+    return this.withMappedExt(outFilePath, ext);
   }
 
   private async buildFile(

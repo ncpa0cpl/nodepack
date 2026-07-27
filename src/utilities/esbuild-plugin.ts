@@ -260,7 +260,10 @@ export const ESbuildPlugin = (params: {
                 );
 
                 return {
-                  path: path.isAbsolute(importPath) ? p : asRelative(p),
+                  path: builder.withMappedExt(
+                    path.isAbsolute(importPath) ? p : asRelative(p),
+                    outExt,
+                  ),
                   external: true,
                 };
               } else {
