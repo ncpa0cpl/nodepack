@@ -1,3 +1,1 @@
-import { ext } from "./get-ext";
-
-export const getCurrentExtension = () => ext;
+export const ext = ".ts";

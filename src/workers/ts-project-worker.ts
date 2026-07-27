@@ -1,14 +1,14 @@
 import { WorkerBridge } from "@ncpa0cpl/node-worker-bridge";
 import { createProject, ts } from "@ts-morph/bootstrap";
-import { getCurrentExtension } from "./get-ext";
-import { getWorkersDir } from "./get-workers-dir";
+import { ext } from "./get-ext";
+import { dir } from "./get-workers-dir";
 
 type MainThread = {
   getTsConfig(): Promise<string | undefined>;
 };
 
 export const TsProjectWorker = WorkerBridge(
-  { file: `${getWorkersDir()}/ts-project-worker${getCurrentExtension()}` },
+  { file: `${dir}/ts-project-worker${ext}` },
   (main: MainThread) => {
     const getProject = async (
       decorators: "experimental" | "es",

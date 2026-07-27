@@ -1,1 +1,3 @@
-export const ext = "";
+const ext = ".js";
+
+exports.ext = ext;

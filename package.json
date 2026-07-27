@@ -3,6 +3,7 @@
   "version": "2.3.9",
   "main": "./dist/legacy/index.js",
   "types": "./dist/types/index.d.ts",
+  "type": "module",
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
@@ -16,7 +17,7 @@
     "test:lint": "oxlint",
     "test:fmt": "dprint fmt --fail-on-change",
     "test:tsc": "tsc --noEmit",
-    "build": "node ./scripts/build.cjs",
+    "build": "bun ./scripts/build.mjs",
     "upgrade:deps": "node ./scripts/upgrade.mjs",
     "prepare": "husky install",
     "release": "git switch master && git push && git switch release && git rebase master && git push && git switch master"
@@ -56,7 +57,6 @@
     "json-to-ts": "^2.1.0"
   },
   "devDependencies": {
-    "@ncpa0cpl/nodepack": "2.3.6",
     "@types/lodash.mergewith": "^4.6.9",
     "@types/node": "^20.2.5",
     "dprint": "^0.55.2",

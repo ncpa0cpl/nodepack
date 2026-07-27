@@ -28,6 +28,7 @@ jobs:
         with:
           ref: master
           token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: oven-sh/setup-bun@v2
       - uses: actions/setup-node@v6
         with:
           node-version: 24

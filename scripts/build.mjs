@@ -1,13 +1,15 @@
 // @ts-ignore
-const path = require("path");
-const { toTsType } = require("dilswer");
-const { build } = require("../node_modules/@ncpa0cpl/nodepack");
-const fs = require("fs/promises");
+import { toTsType } from "dilswer";
+import fs from "fs/promises";
+import path from "path";
+import url from "url";
+import { build } from "../src/index";
 
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const p = (...args) => path.resolve(__dirname, "..", ...args);
 
 async function buildConfigTypes() {
-  const { buildConfigSchema } = require(p("dist/cjs/build-config.cjs"));
+  const { buildConfigSchema } = await import(p("dist/cjs/build-config.cjs"));
 
   const ts = toTsType(buildConfigSchema, {
     declaration: true,
@@ -42,20 +44,20 @@ async function main() {
     tsConfig: p("tsconfig.json"),
     declarations: true,
     isomorphicImports: {
-      "./workers/get-ext/get-ext.ts": {
-        cjs: "./workers/get-ext/get-ext.cjs.ts",
-        mjs: "./workers/get-ext/get-ext.mjs.ts",
-        js: "./workers/get-ext/get-ext.js.ts",
+      "./workers/get-ext": {
+        cjs: "./workers/get-ext/get-ext.cts",
+        mjs: "./workers/get-ext/get-ext.mts",
+        js: "./workers/get-ext/get-ext.ts",
       },
-      "./workers/get-workers-dir/get-workers-dir.ts": {
-        cjs: "./workers/get-workers-dir/get-workers-dir.cjs.ts",
-        mjs: "./workers/get-workers-dir/get-workers-dir.mjs.ts",
-        js: "./workers/get-workers-dir/get-workers-dir.js.ts",
+      "./workers/get-workers-dir": {
+        mjs: "./workers/get-workers-dir/get-workers-dir.ts",
+        cjs: "./workers/get-workers-dir/get-workers-dir.cts",
+        js: "./workers/get-workers-dir/get-workers-dir.cts",
       },
-      "./get-nodepack-dir/get-nodepack-dir.ts": {
-        js: "./get-nodepack-dir/get-nodepack-dir.cjs.ts",
-        cjs: "./get-nodepack-dir/get-nodepack-dir.cjs.ts",
-        mjs: "./get-nodepack-dir/get-nodepack-dir.mjs.ts",
+      "./get-nodepack-dir": {
+        mjs: "./get-nodepack-dir/get-nodepack-dir.ts",
+        cjs: "./get-nodepack-dir/get-nodepack-dir.cts",
+        js: "./get-nodepack-dir/get-nodepack-dir.cts",
       },
     },
   });
