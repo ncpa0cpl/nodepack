@@ -4,12 +4,13 @@ import fs from "fs/promises";
 import path from "path";
 import url from "url";
 import { build } from "../src/index";
+// import { build } from "../dist/esm/index.mjs";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const p = (...args) => path.resolve(__dirname, "..", ...args);
 
 async function buildConfigTypes() {
-  const { buildConfigSchema } = await import(p("dist/cjs/build-config.cjs"));
+  const { buildConfigSchema } = await import(p("dist/esm/build-config.mjs"));
 
   const ts = toTsType(buildConfigSchema, {
     declaration: true,

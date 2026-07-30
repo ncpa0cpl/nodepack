@@ -1,5 +1,6 @@
 import { WorkerBridge } from "@ncpa0cpl/node-worker-bridge";
 import { createProject, ts } from "@ts-morph/bootstrap";
+import fs from "fs/promises";
 import { ScriptTarget } from "../utilities/map-compiler-target";
 import { ext } from "./get-ext";
 import { dir } from "./get-workers-dir";
@@ -9,7 +10,7 @@ type MainThread = {
 };
 
 export const TsProjectWorker = WorkerBridge(
-  { file: `${dir}/ts-project-worker${ext}` },
+  { file: `${dir}/ts-project-worker${ext}`, keepAlive: true },
   (main: MainThread) => {
     const getProject = async (
       decorators: "experimental" | "es",
@@ -64,6 +65,13 @@ export const TsProjectWorker = WorkerBridge(
     const emitDeclarations = async (params: {
       compilerOptions: ts.CompilerOptions;
     }) => {
+      const outDir = params.compilerOptions.outDir;
+      if (!outDir) {
+        throw new Error("declarations: missing 'outDir'");
+      }
+
+      await fs.rm(outDir, { recursive: true, force: true });
+
       const project = await createProject({
         tsConfigFilePath: await main.getTsConfig(),
         compilerOptions: params.compilerOptions,
@@ -71,12 +79,18 @@ export const TsProjectWorker = WorkerBridge(
 
       const program = project.createProgram();
 
-      await program.emit(
+      program.emit(
         undefined,
         undefined,
         undefined,
         /* emitOnlyDtsFiles */ true,
       );
+
+      if (!await fs.access(outDir).then(() => true, () => false)) {
+        throw new Error(
+          "declarations: TypeScript didn't emit any files",
+        );
+      }
     };
 
     return { emitDeclarations, parseFile };
