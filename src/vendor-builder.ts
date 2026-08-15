@@ -5,6 +5,16 @@ import type { ProgramContext } from "./program";
 import { loadFooterBanner } from "./utilities/load-footer-banner";
 import { VendorBuilderPlugin } from "./utilities/vendor-builder-plugin";
 
+type VendorBuildable = string | {
+  name: string;
+  vendors: string[];
+};
+
+function vendorName(vendor: VendorBuildable): string {
+  if (typeof vendor === "string") return vendor;
+  return vendor.name;
+}
+
 export class VendorBuilder {
   private cjsBuildDir: string;
   private esmBuildDir: string;
@@ -40,7 +50,7 @@ export class VendorBuilder {
   }
 
   private async buildVendorFile(
-    vendorName: string,
+    vendor: VendorBuildable,
     outDir: string,
     format: esbuild.BuildOptions["format"],
     ext: string,
@@ -48,16 +58,20 @@ export class VendorBuilder {
     const { plugins: additionalPlugins = [], ...additionalOptions } = this
       .program.config.get("esbuildOptions", {});
 
-    const outpath = path.resolve(
+    const vendorDirPath = path.resolve(
       outDir,
       this.program.vendorsDir,
-      `${vendorName}${ext}`,
+    );
+
+    const outpath = path.join(
+      vendorDirPath,
+      `${vendorName(vendor)}${ext}`,
     );
 
     const entrypointFilepath = this.getVendorProxyFilePath(format);
 
     const footerBannerOptions = await this.resolveFootersBanners(
-      vendorName,
+      vendorName(vendor),
       format,
     );
 
@@ -74,8 +88,10 @@ export class VendorBuilder {
         ...additionalPlugins,
         VendorBuilderPlugin({
           program: this.program,
+          vendorDirPath,
           vendorBuilder: this,
-          vendor: vendorName,
+          vendorName: vendorName(vendor),
+          entrypoints: typeof vendor === "string" ? [vendor] : vendor.vendors,
           srcDir: this.srcDir,
           outfile: outpath,
           outExt: ext,
@@ -110,7 +126,10 @@ export class VendorBuilder {
     };
   }
 
-  private buildVendors(vendors: string[], format: "cjs" | "esm" | "legacy") {
+  private buildVendors(
+    vendors: VendorBuildable[],
+    format: "cjs" | "esm" | "legacy",
+  ) {
     if (format === "cjs") {
       return Promise.all(
         vendors.map((v) =>
@@ -138,7 +157,19 @@ export class VendorBuilder {
     throw Error("Impossible scenario.");
   }
 
-  public addVendors(vendors: string[]) {
+  private vendorsBuiltOrStarted = new Set<string>();
+
+  public addVendors(vendors: VendorBuildable[]) {
+    vendors = vendors.filter(v => {
+      return !this.vendorsBuiltOrStarted.has(vendorName(v));
+    });
+
+    if (vendors.length === 0) return;
+
+    for (const v of vendors) {
+      this.vendorsBuiltOrStarted.add(vendorName(v));
+    }
+
     if (this.program.formats.isEsm) {
       this.addJob(this.buildVendors(vendors, "esm"));
     }

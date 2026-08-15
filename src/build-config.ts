@@ -56,6 +56,15 @@ const TypeBannerFooterMap = Type.Dict(
   ),
 );
 
+const CompiledVendorPackage = Type.Record({
+  name: Type.String,
+  vendors: Type.Array(Type.String),
+})
+  .meta.title("CompiledVendorPackage")
+  .meta.description(
+    "A package of mutlpiple vendors to package into a single bundle.",
+  );
+
 export const buildConfigSchema = Type.Record({
   target: Type.OneOf(
     Type.Literal("es2015"),
@@ -124,7 +133,10 @@ export const buildConfigSchema = Type.Record({
   ),
   esbuildOptions: Type.Option(TypeEsbuildOptions),
   compileVendors: Type.Option(
-    Type.OneOf(Type.Literal("all"), Type.Array(Type.String)),
+    Type.OneOf(
+      Type.Literal("all"),
+      Type.Array(Type.String, CompiledVendorPackage),
+    ),
   ),
   preset: Type.Option(
     Type.Record({

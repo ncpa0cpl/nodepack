@@ -1,5 +1,7 @@
 import merge from "lodash.mergewith";
+import path from "node:path";
 import type { BuildConfig } from "../build-config-type";
+import { asRelative } from "./as-relative";
 import { denoPreset } from "./presets/deno.preset";
 import { gjsPreset } from "./presets/gjs.preset";
 import { nodePreset } from "./presets/node.preset";
@@ -25,7 +27,11 @@ export class ConfigHelper {
 
   constructor(private readonly config: BuildConfig) {
     if (Array.isArray(config.compileVendors)) {
-      this.vendors = new Set(config.compileVendors);
+      this.vendors = new Set(
+        Array.from(config.compileVendors).flatMap(v =>
+          typeof v === "string" ? v : v.vendors
+        ),
+      );
     }
 
     if (config.preset) {
@@ -56,7 +62,7 @@ export class ConfigHelper {
     this.config.external = (config.external ?? []).concat(additionalExternal);
   }
 
-  isVendor(m: string) {
+  isSplitVendor(m: string) {
     if (m.startsWith("/") || m.startsWith(".")) {
       return false;
     }
@@ -66,6 +72,56 @@ export class ConfigHelper {
     }
 
     return this.vendors.has(m);
+  }
+
+  mapVendorImport(
+    originalImport: string,
+    outExt: string,
+    relativeFrom?: {
+      /** File from which this vendor will be imported */
+      from: string;
+      /** Path to the vendor directory */
+      vendorDir: string;
+    },
+  ) {
+    if (this.config.compileVendors == null) {
+      throw new Error(
+        "cannot map vendor import, compileVendors config option is not defined",
+      );
+    }
+
+    if (this.config.compileVendors === "all") {
+      return asRelative(`${originalImport}${outExt}`);
+    }
+
+    for (const e of this.config.compileVendors ?? []) {
+      if (typeof e === "string") {
+        if (e === originalImport) {
+          if (relativeFrom) {
+            const pth = path.join(
+              relativeFrom.vendorDir,
+              `${originalImport}${outExt}`,
+            );
+            return asRelative(path.relative(relativeFrom.from, pth));
+          } else {
+            return asRelative(`${originalImport}${outExt}`);
+          }
+        }
+      } else {
+        if (e.vendors.includes(originalImport)) {
+          if (relativeFrom) {
+            const pth = path.join(relativeFrom.vendorDir, `${e.name}${outExt}`);
+            return asRelative(path.relative(relativeFrom.from, pth));
+          } else {
+            return asRelative(`${e.name}${outExt}`);
+          }
+        }
+      }
+    }
+
+    throw new Error(
+      `cannot map vendor import, '${originalImport}' is not a mapped vendor`,
+    );
   }
 
   isExternal(m: string) {

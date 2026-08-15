@@ -169,7 +169,10 @@ export const ESbuildPlugin = (params: {
           };
         }
 
-        if (program.config.isVendor(args.path)) {
+        if (
+          program.config.isSplitVendor(originalPath)
+          || program.config.isSplitVendor(args.path)
+        ) {
           onVendorFound(args.path);
           return {
             external: true,
@@ -179,7 +182,7 @@ export const ESbuildPlugin = (params: {
                 path.resolve(
                   outDir,
                   program.vendorsDir,
-                  `${args.path}${outExt}`,
+                  program.config.mapVendorImport(originalPath, outExt),
                 ),
               ),
             ),

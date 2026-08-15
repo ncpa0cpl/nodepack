@@ -2,17 +2,26 @@ import type esbuild from "esbuild";
 import path from "path";
 import type { ProgramContext } from "../program";
 import type { VendorBuilder } from "../vendor-builder";
-import { asRelative } from "./as-relative";
 
 export const VendorBuilderPlugin = (params: {
   program: ProgramContext;
   vendorBuilder: VendorBuilder;
-  vendor: string;
+  vendorDirPath: string;
+  vendorName: string;
+  entrypoints: string[];
   srcDir: string;
   outfile: string;
   outExt: string;
 }): esbuild.Plugin => {
-  const { vendorBuilder, program, vendor, outfile, srcDir, outExt } = params;
+  const {
+    vendorBuilder,
+    program,
+    vendorDirPath,
+    entrypoints,
+    outfile,
+    srcDir,
+    outExt,
+  } = params;
 
   const vendors = program.config.get("compileVendors");
   const importReplace = new Map(
@@ -28,19 +37,68 @@ export const VendorBuilderPlugin = (params: {
   return {
     name: "nodepack-vendor-builder-plugin",
     setup(build) {
-      build.onResolve({ filter: /nodepack-vendor-dummy/ }, (args) => {
-        return build.resolve(vendor, {
-          importer: args.importer,
-          kind: args.kind,
-          namespace: args.namespace,
-          resolveDir: args.resolveDir,
-        });
+      const pkgs = entrypoints.map(pkg => {
+        const replaceWith = importReplace.get(pkg);
+        if (replaceWith) {
+          if (replaceWith.startsWith(".")) {
+            const fromOutfileToReplacement = path.relative(
+              path.dirname(outfile),
+              path.resolve(srcDir, replaceWith),
+            );
+            pkg = fromOutfileToReplacement;
+          } else {
+            pkg = replaceWith;
+          }
+        }
+
+        return pkg;
+      });
+
+      build.onLoad({
+        filter: /.*/,
+        namespace: "nodepack-vendor-builder-plugin",
+      }, () => {
+        return {
+          contents: pkgs.length > 1
+            ? pkgs.map((pkg) => `export * from ${JSON.stringify(pkg)};\n`)
+              .join("\n")
+            : pkgs.map((pkg) =>
+              `export * from ${JSON.stringify(pkg)};\n`
+              + `import * as pkg from ${JSON.stringify(pkg)};\n`
+              + `export default pkg.default ?? pkg;`
+            )
+              .join("\n"),
+
+          loader: "ts",
+          resolveDir: srcDir,
+        };
       });
 
       build.onResolve({ filter: /.*/ }, async (args) => {
-        if (args.path === "nodepack-vendor-dummy" || args.path === vendor) {
+        if (
+          typeof args.pluginData === "object" && args.pluginData != null
+          && args.pluginData.evbpSkip === true
+        ) {
           return;
         }
+
+        if (args.path === "nodepack-vendor-dummy") {
+          return {
+            path: args.path,
+            pluginName: "nodepack-vendor-builder-plugin",
+            namespace: "nodepack-vendor-builder-plugin",
+          };
+        }
+
+        const resolve = (pth: string) => {
+          return build.resolve(pth, {
+            importer: args.importer,
+            kind: args.kind,
+            namespace: args.namespace,
+            resolveDir: args.resolveDir,
+            pluginData: { evbpSkip: true },
+          });
+        };
 
         const originalPath = args.path;
         args = { ...args };
@@ -58,40 +116,46 @@ export const VendorBuilderPlugin = (params: {
           }
         }
 
-        if (program.config.isExternal(originalPath)) {
+        if (
+          program.config.isExternal(originalPath)
+          && !entrypoints.includes(originalPath)
+          && !entrypoints.includes(args.path)
+        ) {
           return {
             external: true,
             path: args.path,
           };
         }
 
-        if (program.config.isVendor(args.path)) {
+        if (
+          program.config.isSplitVendor(originalPath)
+          && !entrypoints.includes(originalPath)
+          && !entrypoints.includes(args.path)
+        ) {
           onVendorFound(args.path);
+
           return {
             external: true,
-            path: asRelative(`${args.path}${outExt}`),
+            path: program.config.mapVendorImport(originalPath, outExt, {
+              vendorDir: vendorDirPath,
+              from: path.dirname(outfile),
+            }),
           };
         }
 
         if (args.path === originalPath) {
-          return;
+          return resolve(args.path);
         }
 
         if (!args.path.startsWith(".") || args.path.startsWith("/")) {
-          return {
-            path: path.isAbsolute(args.path)
+          return resolve(
+            path.isAbsolute(args.path)
               ? args.path
               : path.resolve(args.resolveDir, args.path),
-          };
+          );
         }
 
-        return build.resolve(args.path, {
-          importer: args.importer,
-          kind: args.kind,
-          namespace: args.namespace,
-          resolveDir: args.resolveDir,
-          pluginData: args.pluginData,
-        });
+        return resolve(args.path);
       });
     },
   };
