@@ -48,10 +48,12 @@ const TypeBannerFooterMap = Type.Dict(
     Type.Record({
       file: Type.String,
       loader: Type.Option(TypeBannerFooterLoader),
+      minify: Type.Option(Type.Boolean),
     }),
     Type.Record({
       text: Type.String,
       loader: Type.Option(TypeBannerFooterLoader),
+      minify: Type.Option(Type.Boolean),
     }),
   ),
 );

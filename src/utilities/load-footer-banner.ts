@@ -20,6 +20,7 @@ export const loadFooterBanner = async (
     esModuleInterop: true,
     module: format === "esm" ? 7 : 1,
     moduleResolution: 2, // NodeJs
+    sourceMap: false,
   };
 
   if ("text" in footerBanner) {
@@ -39,6 +40,8 @@ export const loadFooterBanner = async (
             target: program.config.get("target"),
             loader: "ts",
             format,
+            minify: footerBanner.minify,
+            sourcemap: false,
           })
           .then((r) => r.code);
       default:
@@ -52,8 +55,6 @@ export const loadFooterBanner = async (
     );
 
     switch (footerBanner.loader) {
-      case "copy":
-        return fileContent;
       case "typescript":
         return await program.tsProgram.parseFile({
           filePath: path.basename(footerBanner.file),
@@ -63,14 +64,18 @@ export const loadFooterBanner = async (
             ? "es"
             : "experimental",
         });
-      default:
+      case "esbuild":
         return await esbuild
           .transform(fileContent, {
             target: program.config.get("target"),
             loader: "ts",
             format,
+            minify: footerBanner.minify,
+            sourcemap: false,
           })
           .then((r) => r.code);
+      default:
+        return fileContent;
     }
   }
 };
