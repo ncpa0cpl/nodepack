@@ -30,6 +30,7 @@ const noop = () => {};
 
 export class Program {
   context: ProgramContext;
+  builder;
 
   constructor(config: BuildConfig) {
     this.context = {
@@ -45,6 +46,12 @@ export class Program {
       ),
       vendorsDir: "_vendors",
     };
+
+    this.builder = new Builder(
+      this.context,
+      this.context.config.get("srcDir"),
+      this.context.config.get("outDir"),
+    );
   }
 
   private shouldCompile(filePath: string) {
@@ -90,24 +97,25 @@ export class Program {
       this.context.config.get("entrypoint")!,
     );
 
+    const vendors = this.context.config.get("compileVendors");
+    if (Array.isArray(vendors) && vendors.length > 0) {
+      builder.vendorBuilder.addVendors(vendors);
+      await builder.vendorBuilder.flush();
+    }
+
     if (this.context.formats.isCjs) {
-      await builder.bundle(entrypointPath, "cjs");
+      return [await builder.bundle(entrypointPath, "cjs")];
     }
 
     if (this.context.formats.isEsm) {
-      await builder.bundle(entrypointPath, "esm");
+      return [await builder.bundle(entrypointPath, "esm")];
     }
 
     if (this.context.formats.isLegacy) {
-      await builder.bundle(entrypointPath, "legacy");
+      return [await builder.bundle(entrypointPath, "legacy")];
     }
 
-    const vendors = this.context.config.get("compileVendors");
-    if (Array.isArray(vendors)) {
-      builder.vendorBuilder.addVendors(vendors);
-    }
-
-    await builder.vendorBuilder.flush();
+    return [];
   }
 
   private async build(builder: Builder) {
@@ -131,49 +139,46 @@ export class Program {
   }
 
   private async buildFiles(builder: Builder, files: string[]) {
+    const vendors = this.context.config.get("compileVendors");
+    if (Array.isArray(vendors) && vendors.length > 0) {
+      builder.vendorBuilder.addVendors(vendors);
+      await builder.vendorBuilder.flush();
+    }
+
+    const ops: Array<Promise<string[]>> = [];
+
     if (this.context.formats.isCjs) {
-      await Promise.all(
+      ops.push(Promise.all(
         files
           .filter(f => this.isForFormat(f, "cjs"))
           .map((file) => builder.build(file, "cjs")),
-      );
+      ));
     }
 
     if (this.context.formats.isEsm) {
-      await Promise.all(
+      ops.push(Promise.all(
         files
           .filter(f => this.isForFormat(f, "esm"))
           .map((file) => builder.build(file, "esm")),
-      );
+      ));
     }
 
     if (this.context.formats.isLegacy) {
-      await Promise.all(
+      ops.push(Promise.all(
         files
           .filter(f => this.isForFormat(f, "legacy"))
           .map((file) => builder.build(file, "legacy")),
-      );
+      ));
     }
 
-    const vendors = this.context.config.get("compileVendors");
-    if (Array.isArray(vendors)) {
-      builder.vendorBuilder.addVendors(vendors);
-    }
-
-    await builder.vendorBuilder.flush();
+    return Promise.all(ops).then(l => l.flat());
   }
 
   async transpileSource() {
-    const builder = new Builder(
-      this.context,
-      this.context.config.get("srcDir"),
-      this.context.config.get("outDir"),
-    );
-
     if (this.context.config.get("bundle")) {
-      await this.bundle(builder);
+      return await this.bundle(this.builder);
     } else {
-      await this.build(builder);
+      return await this.build(this.builder);
     }
   }
 
@@ -199,67 +204,80 @@ export class Program {
   async watchSource() {
     CacheMap.disableCache();
 
-    const builder = new Builder(
-      this.context,
-      this.context.config.get("srcDir"),
-      this.context.config.get("outDir"),
-    );
-
     const onBuildComplete = this.context.config.get("onBuildComplete") as
-      | (() => void | (() => any))
+      | ((
+        result: { outputs: string[] },
+      ) => void | (() => any) | Promise<void | (() => any)>)
       | undefined;
     const bundle = this.context.config.get("bundle");
     const abortSignal = this.context.config.get("watchAbortSignal");
 
     console.log("Initial build...");
-    if (this.context.config.get("bundle")) {
-      await this.bundle(builder).catch((error) => {
-        console.error(error);
-      });
-    } else {
-      await this.build(builder).catch((error) => {
-        console.error(error);
-      });
-    }
 
-    let cleanup = noop;
+    let cleanup: () => any = noop;
 
     try {
-      cleanup = onBuildComplete?.() ?? noop;
-    } catch {
-      //
+      let outputs: string[];
+      if (this.context.config.get("bundle")) {
+        outputs = await this.bundle(this.builder).catch((error) => {
+          console.error(error);
+          return [];
+        });
+      } else {
+        outputs = await this.build(this.builder).catch((error) => {
+          console.error(error);
+          return [];
+        });
+      }
+
+      try {
+        cleanup = await onBuildComplete?.({ outputs }) ?? noop;
+      } catch (err) {
+        console.error(err);
+      }
+    } catch (err) {
+      console.error(err);
     }
 
     console.log("Watching for changes...");
     const watcher = chokidar
       .watch(this.context.config.get("srcDir"), { ignoreInitial: true })
       .on("all", async (event, fpath) => {
-        if (event !== "addDir" && this.shouldCompile(fpath)) {
-          console.log(
-            `Detected change in ${path.basename(fpath)}, rebuilding...`,
-          );
+        try {
+          if (event !== "addDir" && this.shouldCompile(fpath)) {
+            console.log(
+              `Detected change in ${path.basename(fpath)}, rebuilding...`,
+            );
 
-          try {
-            await cleanup();
-          } catch (e) {
-            console.error(e);
-          }
+            try {
+              await cleanup();
+            } catch (e) {
+              console.error(e);
+            }
 
-          if (bundle) {
-            await this.bundle(builder).catch((error) => {
-              console.error(error);
-            });
-          } else {
-            await this.buildFiles(builder, [fpath]).catch((error) => {
-              console.error(error);
-            });
-          }
+            let outputs: string[];
+            if (bundle) {
+              outputs = await this.bundle(this.builder).catch((error) => {
+                console.error(error);
+                return [];
+              });
+            } else {
+              outputs = await this.buildFiles(this.builder, [fpath]).catch(
+                (error) => {
+                  console.error(error);
+                  return [];
+                },
+              );
+            }
 
-          try {
-            cleanup = onBuildComplete?.() ?? noop;
-          } catch (e) {
-            console.error(e);
+            try {
+              cleanup = await onBuildComplete?.({ outputs }) ?? noop;
+            } catch (e) {
+              console.error(e);
+            }
           }
+        } catch (err) {
+          console.error(err);
         }
       });
 

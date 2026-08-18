@@ -14,25 +14,17 @@ export const VendorBuilderPlugin = (params: {
   outExt: string;
 }): esbuild.Plugin => {
   const {
-    vendorBuilder,
     program,
-    vendorDirPath,
     entrypoints,
     outfile,
     srcDir,
     outExt,
+    vendorBuilder,
   } = params;
 
-  const vendors = program.config.get("compileVendors");
   const importReplace = new Map(
     Object.entries(program.config.get("replaceImports") ?? {}),
   );
-
-  const onVendorFound = vendors === "all"
-    ? (vendor: string) => {
-      vendorBuilder.addVendors([vendor]);
-    }
-    : (_: string) => {};
 
   return {
     name: "nodepack-vendor-builder-plugin",
@@ -132,14 +124,17 @@ export const VendorBuilderPlugin = (params: {
           && !entrypoints.includes(originalPath)
           && !entrypoints.includes(args.path)
         ) {
-          onVendorFound(args.path);
-
           return {
             external: true,
-            path: program.config.mapVendorImport(originalPath, outExt, {
-              vendorDir: vendorDirPath,
-              from: path.dirname(outfile),
-            }),
+            path: await vendorBuilder.getImportForVendorPackage(
+              originalPath,
+              outExt,
+              path.dirname(outfile),
+            ),
+            // program.config.mapVendorImport(originalPath, outExt, {
+            //   vendorDir: vendorDirPath,
+            //   from: path.dirname(outfile),
+            // }),
           };
         }
 

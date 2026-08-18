@@ -44,6 +44,7 @@
     "@ncpa0cpl/node-worker-bridge": "^0.0.4",
     "@ts-morph/bootstrap": "^0.29.0",
     "chokidar": "^3.5.3",
+    "crc-32": "^1.2.2",
     "dilswer": "3.2.1",
     "lodash.mergewith": "^4.6.2",
     "node-os-walk": ">=1.0.2",

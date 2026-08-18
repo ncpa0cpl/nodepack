@@ -1,9 +1,11 @@
 import esbuild from "esbuild";
+import fs from "fs/promises";
 import path from "path";
 import type { ProgramContext } from "./program";
 import { changeExt } from "./utilities/change-ext";
 import { ESbuildPlugin } from "./utilities/esbuild-plugin";
 import { loadFooterBanner } from "./utilities/load-footer-banner";
+import { replaceNameVars } from "./utilities/replace-name-vars";
 import { VendorBuilder } from "./vendor-builder";
 
 export class Builder {
@@ -17,9 +19,15 @@ export class Builder {
     private srcDir: string,
     outDir: string,
   ) {
-    this.cjsBuildDir = path.resolve(outDir, "cjs");
-    this.esmBuildDir = path.resolve(outDir, "esm");
-    this.legacyBuildDir = path.resolve(outDir, "legacy");
+    if (this.program.config.get("noDirScoping", false)) {
+      this.cjsBuildDir = outDir;
+      this.esmBuildDir = outDir;
+      this.legacyBuildDir = outDir;
+    } else {
+      this.cjsBuildDir = path.resolve(outDir, "cjs");
+      this.esmBuildDir = path.resolve(outDir, "esm");
+      this.legacyBuildDir = path.resolve(outDir, "legacy");
+    }
     this.vendorBuilder = new VendorBuilder(program, srcDir, outDir);
   }
 
@@ -87,7 +95,7 @@ export class Builder {
       bundle,
     );
 
-    const r = await esbuild.build({
+    await esbuild.build({
       ...additionalOptions,
       ...footerBannerOptions,
       entryPoints: [actualFilePath],
@@ -114,7 +122,23 @@ export class Builder {
       outExtension: { ".js": outExt },
     });
 
-    return r;
+    const bundleOutfile = this.program.config.get("bundleOutfile");
+    if (bundle && bundleOutfile) {
+      let newName = await replaceNameVars(
+        bundleOutfile,
+        path.basename(outfile, path.extname(outfile)),
+        outfile,
+      );
+
+      if (newName != path.basename(outfile)) {
+        const newPath = path.join(path.dirname(outfile), newName);
+        await fs.mkdir(path.dirname(newPath), { recursive: true });
+        await fs.rename(outfile, newPath);
+        return newPath;
+      }
+    }
+
+    return outfile;
   }
 
   private async resolveFootersBanners(

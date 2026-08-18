@@ -34,7 +34,8 @@ const TypeExtensionMap = Type.Custom(isValidExtMapping).meta.extra({
 });
 
 const TypeOnBuildCompleteCb = Type.Function.meta.extra({
-  type: "() => void | (() => any)",
+  type:
+    "((result: { outputs: string[] }) => void | (() => any) | Promise<void | (() => any)>)",
 });
 
 const TypeBannerFooterLoader = Type.OneOf(
@@ -60,6 +61,7 @@ const TypeBannerFooterMap = Type.Dict(
 
 const CompiledVendorPackage = Type.Record({
   name: Type.String,
+  outfile: Type.Option(Type.String),
   vendors: Type.Array(Type.String),
 })
   .meta.title("CompiledVendorPackage")
@@ -107,8 +109,10 @@ export const buildConfigSchema = Type.Record({
       Type.Literal("legacy"),
     ),
   ),
+  noDirScoping: Type.Option(Type.Boolean),
   entrypoint: Type.Option(Type.String),
   bundle: Type.Option(Type.Boolean),
+  bundleOutfile: Type.Option(Type.String),
   tsConfig: Type.Option(Type.String),
   declarations: Type.Option(Type.OneOf(Type.Boolean, Type.Literal("only"))),
   exclude: Type.Option(
@@ -135,10 +139,7 @@ export const buildConfigSchema = Type.Record({
   ),
   esbuildOptions: Type.Option(TypeEsbuildOptions),
   compileVendors: Type.Option(
-    Type.OneOf(
-      Type.Literal("all"),
-      Type.Array(Type.String, CompiledVendorPackage),
-    ),
+    Type.Array(Type.String, CompiledVendorPackage),
   ),
   preset: Type.Option(
     Type.Record({
@@ -350,6 +351,20 @@ buildConfigSchema.recordOf.parsableExtensions.type.meta.description(
   "List of file extensions that should be parsed by the ESBuild compiler. By default only"
     + " filetypes that ESBuild can handle are compiled, if a plugin is added for handling"
     + " other filetypes - the appropriate extension should be added here.",
+);
+
+CompiledVendorPackage.recordOf.vendors.meta.description(
+  "List of node_module libraries to include in this bundle package.",
+);
+CompiledVendorPackage.recordOf.name.meta.description(
+  "Name of the vendor package.",
+);
+CompiledVendorPackage.recordOf.outfile.type.meta.description(
+  "Pattern for generating the  name. Possible variables: [name] - name of the vendor package, [hash] - hash of the package contents, [ext] - file extension.",
+);
+
+buildConfigSchema.recordOf.noDirScoping.type.meta.description(
+  "When enabled output files will be placed directly into the outDir, wwith the `cjs`, `esm` or `legacy` subdirectory scoping.",
 );
 
 const validateConfig = validator(buildConfigSchema, { details: true });

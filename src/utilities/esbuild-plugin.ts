@@ -73,7 +73,6 @@ export const ESbuildPlugin = (params: {
   format: "cjs" | "esm" | "legacy";
 }) => {
   const {
-    vendorBuilder,
     extMapper,
     outDir,
     program,
@@ -85,18 +84,11 @@ export const ESbuildPlugin = (params: {
     builder,
   } = params;
 
-  const vendors = program.config.get("compileVendors");
   const importReplace = new Map(
     Object.entries(program.config.get("replaceImports") ?? {}),
   );
 
   const { pathAliases, tsProgram, config: buildConfig } = program;
-
-  const onVendorFound = vendors === "all"
-    ? (vendor: string) => {
-      vendorBuilder.addVendors([vendor]);
-    }
-    : (_: string) => {};
 
   return {
     name: "nodepack-esbuild-plugin",
@@ -173,19 +165,23 @@ export const ESbuildPlugin = (params: {
           program.config.isSplitVendor(originalPath)
           || program.config.isSplitVendor(args.path)
         ) {
-          onVendorFound(args.path);
           return {
             external: true,
-            path: asRelative(
-              path.relative(
-                path.dirname(outfile),
-                path.resolve(
-                  outDir,
-                  program.vendorsDir,
-                  program.config.mapVendorImport(originalPath, outExt),
-                ),
-              ),
+            path: await builder.vendorBuilder.getImportForVendorPackage(
+              originalPath,
+              outExt,
+              path.dirname(outfile),
             ),
+            // asRelative(
+            //   path.relative(
+            //     path.dirname(outfile),
+            //     path.resolve(
+            //       outDir,
+            //       program.vendorsDir,
+
+            //     ),
+            //   ),
+            // ),
           };
         }
 

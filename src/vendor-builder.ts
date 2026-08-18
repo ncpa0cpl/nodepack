@@ -1,12 +1,16 @@
 import esbuild from "esbuild";
+import fs from "fs/promises";
 import path from "path";
 import { nodepackDir } from "./get-nodepack-dir/get-nodepack-dir";
 import type { ProgramContext } from "./program";
+import { asRelative } from "./utilities/as-relative";
 import { loadFooterBanner } from "./utilities/load-footer-banner";
+import { replaceNameVars } from "./utilities/replace-name-vars";
 import { VendorBuilderPlugin } from "./utilities/vendor-builder-plugin";
 
 type VendorBuildable = string | {
   name: string;
+  outfile?: string;
   vendors: string[];
 };
 
@@ -22,14 +26,22 @@ export class VendorBuilder {
   private buildJobs: Promise<any>[] = [];
   private jobsFinished = 0;
 
+  private vendorImportOutputs = new Map<string, Promise<string>>();
+
   constructor(
     private program: ProgramContext,
     private srcDir: string,
     outDir: string,
   ) {
-    this.cjsBuildDir = path.resolve(outDir, "cjs");
-    this.esmBuildDir = path.resolve(outDir, "esm");
-    this.legacyBuildDir = path.resolve(outDir, "legacy");
+    if (this.program.config.get("noDirScoping", false)) {
+      this.cjsBuildDir = outDir;
+      this.esmBuildDir = outDir;
+      this.legacyBuildDir = outDir;
+    } else {
+      this.cjsBuildDir = path.resolve(outDir, "cjs");
+      this.esmBuildDir = path.resolve(outDir, "esm");
+      this.legacyBuildDir = path.resolve(outDir, "legacy");
+    }
   }
 
   private addJob(job: Promise<any>) {
@@ -54,7 +66,7 @@ export class VendorBuilder {
     outDir: string,
     format: esbuild.BuildOptions["format"],
     ext: string,
-  ) {
+  ): Promise<string> {
     const { plugins: additionalPlugins = [], ...additionalOptions } = this
       .program.config.get("esbuildOptions", {});
 
@@ -75,7 +87,7 @@ export class VendorBuilder {
       format,
     );
 
-    const r = await esbuild.build({
+    await esbuild.build({
       ...additionalOptions,
       ...footerBannerOptions,
       entryPoints: [entrypointFilepath],
@@ -100,7 +112,21 @@ export class VendorBuilder {
       outExtension: { ".js": ext },
     });
 
-    return r;
+    if (typeof vendor === "object" && vendor.outfile) {
+      const newName = await replaceNameVars(
+        vendor.outfile,
+        vendor.name,
+        outpath,
+      );
+      if (newName != path.basename(outpath)) {
+        const newPath = path.join(path.dirname(outpath), newName);
+        await fs.mkdir(path.dirname(newPath), { recursive: true });
+        await fs.rename(outpath, newPath);
+        return newPath;
+      }
+    }
+
+    return outpath;
   }
 
   private async resolveFootersBanners(
@@ -126,35 +152,49 @@ export class VendorBuilder {
     };
   }
 
+  private mapVendorsToBuildJob(
+    vendors: VendorBuildable[],
+    buildir: string,
+    format: esbuild.BuildOptions["format"],
+    ext: string,
+  ) {
+    return vendors.map((v) => {
+      const op = this.buildVendorFile(v, buildir, format, ext);
+      this.vendorImportOutputs.set(ext + ":" + vendorName(v), op);
+
+      if (typeof v === "object") {
+        v.vendors.forEach(vpkg => {
+          this.vendorImportOutputs.set(ext + ":" + vpkg, op);
+        });
+      }
+
+      return op;
+    });
+  }
+
   private buildVendors(
     vendors: VendorBuildable[],
     format: "cjs" | "esm" | "legacy",
   ) {
     if (format === "cjs") {
       return Promise.all(
-        vendors.map((v) =>
-          this.buildVendorFile(v, this.cjsBuildDir, "cjs", ".cjs")
-        ),
+        this.mapVendorsToBuildJob(vendors, this.cjsBuildDir, "cjs", ".cjs"),
       );
     }
 
     if (format === "esm") {
       return Promise.all(
-        vendors.map((v) =>
-          this.buildVendorFile(v, this.esmBuildDir, "esm", ".mjs")
-        ),
+        this.mapVendorsToBuildJob(vendors, this.esmBuildDir, "esm", ".mjs"),
       );
     }
 
     if (format === "legacy") {
       return Promise.all(
-        vendors.map((v) =>
-          this.buildVendorFile(v, this.legacyBuildDir, "cjs", ".js")
-        ),
+        this.mapVendorsToBuildJob(vendors, this.legacyBuildDir, "cjs", ".js"),
       );
     }
 
-    throw Error("Impossible scenario.");
+    throw new Error("Impossible scenario.");
   }
 
   private vendorsBuiltOrStarted = new Set<string>();
@@ -187,5 +227,32 @@ export class VendorBuilder {
     while (this.jobsFinished !== this.buildJobs.length) {
       await Promise.all(this.buildJobs);
     }
+  }
+
+  async getImportForVendorPackage(
+    vendor: string,
+    ext: string,
+    relativeFrom: string,
+    vendorDir?: string,
+  ) {
+    const v = this.vendorImportOutputs.get(ext + ":" + vendor);
+    if (v) {
+      if (relativeFrom) {
+        const pth = await v;
+        return asRelative(path.relative(relativeFrom, pth));
+      }
+
+      return v;
+    }
+    return this.program.config.mapVendorImport(
+      vendor,
+      ext,
+      vendorDir
+        ? {
+          vendorDir,
+          from: relativeFrom,
+        }
+        : undefined,
+    );
   }
 }

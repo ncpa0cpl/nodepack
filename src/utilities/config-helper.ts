@@ -8,6 +8,13 @@ import { nodePreset } from "./presets/node.preset";
 
 export type FooterBanner = ValueOf<Defined<BuildConfig["banner"]>>;
 
+export type VendorImportRelativity = {
+  /** File from which this vendor will be imported */
+  from: string;
+  /** Path to the vendor directory */
+  vendorDir: string;
+};
+
 type MergeWithCustomizer = {
   bivariantHack(
     value: any,
@@ -67,31 +74,18 @@ export class ConfigHelper {
       return false;
     }
 
-    if (this.config.compileVendors === "all") {
-      return true;
-    }
-
     return this.vendors.has(m);
   }
 
   mapVendorImport(
     originalImport: string,
     outExt: string,
-    relativeFrom?: {
-      /** File from which this vendor will be imported */
-      from: string;
-      /** Path to the vendor directory */
-      vendorDir: string;
-    },
+    relativeFrom?: VendorImportRelativity,
   ) {
     if (this.config.compileVendors == null) {
       throw new Error(
         "cannot map vendor import, compileVendors config option is not defined",
       );
-    }
-
-    if (this.config.compileVendors === "all") {
-      return asRelative(`${originalImport}${outExt}`);
     }
 
     for (const e of this.config.compileVendors ?? []) {
@@ -175,7 +169,7 @@ export class ConfigHelper {
   get<K extends keyof BuildConfig>(configProperty: K): BuildConfig[K];
   get<K extends keyof BuildConfig>(
     configProperty: K,
-    defaultValue: BuildConfig[K],
+    defaultValue: Defined<BuildConfig[K]>,
   ): Defined<BuildConfig[K]>;
   get<K extends keyof BuildConfig>(
     configProperty: K,

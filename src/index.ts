@@ -6,6 +6,10 @@ import type { BuildConfig } from "./build-config-type";
 import { Program } from "./program";
 import { ensureAbsolutePath } from "./utilities/ensure-absolute-path";
 
+export type BuildResult = {
+  outputs: string[];
+};
+
 export async function build(config: BuildConfig) {
   let program: Program | undefined = undefined;
 
@@ -17,6 +21,10 @@ export async function build(config: BuildConfig) {
     if (config.tsConfig) {
       ensureAbsolutePath(config.tsConfig);
     }
+
+    const result: BuildResult = {
+      outputs: [],
+    };
 
     program = new Program(config);
 
@@ -30,7 +38,11 @@ export async function build(config: BuildConfig) {
     console.log("Building...");
 
     if (config.declarations !== "only") {
-      ops.push(program.transpileSource());
+      ops.push(
+        program.transpileSource().then(out => {
+          result.outputs.push(...out);
+        }),
+      );
     }
 
     if (config.declarations === true || config.declarations === "only") {
@@ -40,6 +52,8 @@ export async function build(config: BuildConfig) {
     await Promise.all(ops);
 
     console.log("Build completed successfully.");
+
+    return result;
   } catch (error) {
     if (error instanceof Error) {
       const pe = new PrettyError()
