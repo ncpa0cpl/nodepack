@@ -1,6 +1,7 @@
 import esbuild from "esbuild";
 import fs from "fs/promises";
 import path from "path";
+import { ESBuildOptions } from "./esbuild-options-type";
 import type { ProgramContext } from "./program";
 import { changeExt } from "./utilities/change-ext";
 import { ESbuildPlugin } from "./utilities/esbuild-plugin";
@@ -95,7 +96,7 @@ export class Builder {
       bundle,
     );
 
-    await esbuild.build({
+    const result = await esbuild.build({
       ...additionalOptions,
       ...footerBannerOptions,
       entryPoints: [actualFilePath],
@@ -120,25 +121,126 @@ export class Builder {
         }),
       ],
       outExtension: { ".js": outExt },
+      metafile: true,
     });
 
-    const bundleOutfile = this.program.config.get("bundleOutfile");
-    if (bundle && bundleOutfile) {
-      let newName = await replaceNameVars(
-        bundleOutfile,
-        path.basename(outfile, path.extname(outfile)),
-        outfile,
-      );
+    const outfiles: string[] = [];
+    const renames = new Map<string, string>();
 
-      if (newName != path.basename(outfile)) {
-        const newPath = path.join(path.dirname(outfile), newName);
-        await fs.mkdir(path.dirname(newPath), { recursive: true });
-        await fs.rename(outfile, newPath);
-        return newPath;
+    const bundleOutfilePattern = this.program.config.get("bundleOutfile");
+    if (bundle && bundleOutfilePattern) {
+      for (let filename in result.metafile.outputs) {
+        filename = path.resolve(process.cwd(), filename);
+
+        if (this.canMapBundleOutfile(filename)) {
+          const nf = await this.mapBundleOutfile(
+            filename,
+            bundleOutfilePattern,
+          );
+          outfiles.push(nf);
+          if (nf !== filename) {
+            renames.set(filename, nf);
+          }
+        } else if (!filename.endsWith(".map")) {
+          outfiles.push(filename);
+        }
       }
+
+      for (let filename in result.metafile.outputs) {
+        filename = path.resolve(process.cwd(), filename);
+
+        if (filename.endsWith(".map")) {
+          outfiles.push(
+            await this.mapSourcemap(
+              filename,
+              renames,
+              additionalOptions.sourcemap,
+            ),
+          );
+        }
+      }
+    } else {
+      outfiles.push(
+        ...Object.keys(result.metafile.outputs).map(fname =>
+          path.resolve(process.cwd(), fname)
+        ),
+      );
     }
 
-    return outfile;
+    return outfiles;
+  }
+
+  private canMapBundleOutfile(filename: string) {
+    const ext = path.extname(filename);
+    switch (ext) {
+      case ".js":
+      case ".cjs":
+      case ".mjs":
+      case ".css":
+        return true;
+    }
+    return false;
+  }
+
+  private async mapBundleOutfile(
+    filename: string,
+    bundleOutfilePattern: string,
+  ): Promise<string> {
+    let newName = await replaceNameVars(
+      bundleOutfilePattern,
+      path.basename(filename, path.extname(filename)),
+      filename,
+    );
+
+    if (newName !== path.basename(filename)) {
+      const newPath = path.join(path.dirname(filename), newName);
+      await fs.mkdir(path.dirname(newPath), { recursive: true });
+      await fs.rename(filename, newPath);
+      return newPath;
+    }
+
+    return filename;
+  }
+
+  private async mapSourcemap(
+    filename: string,
+    renames: Map<string, string>,
+    sourcemapOpt: ESBuildOptions["sourcemap"],
+  ): Promise<string> {
+    const updateSourceMappingUrl = async (
+      sourceFile: string,
+      oldSourceMap: string,
+      newSourceMap: string,
+    ) => {
+      const srcFileContents = await fs.readFile(sourceFile, "utf-8");
+
+      const reg = new RegExp(
+        `sourceMappingURL=(.*?)${RegExp.escape(path.basename(oldSourceMap))}`,
+        "g",
+      );
+
+      const newSrcFileContents = srcFileContents.replaceAll(
+        reg,
+        "sourceMappingURL=$1" + path.basename(newSourceMap),
+      );
+
+      await fs.writeFile(sourceFile, newSrcFileContents, "utf-8");
+    };
+
+    const renamedSource = renames.get(filename.slice(0, -4));
+    if (renamedSource) {
+      const newFilename = renamedSource + ".map";
+      await fs.rename(filename, newFilename);
+      const result = renamedSource + ".map";
+
+      if (sourcemapOpt === "linked" || sourcemapOpt === true) {
+        await updateSourceMappingUrl(renamedSource, filename, result);
+      }
+
+      return result;
+    } else {
+      return filename;
+    }
   }
 
   private async resolveFootersBanners(
