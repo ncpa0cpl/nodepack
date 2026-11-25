@@ -103,19 +103,21 @@ export class Program {
       await builder.vendorBuilder.flush();
     }
 
+    const ops: Array<Promise<string[]>> = [];
+
     if (this.context.formats.isCjs) {
-      return await builder.bundle(entrypointPath, "cjs");
+      ops.push(builder.bundle(entrypointPath, "cjs"));
     }
 
     if (this.context.formats.isEsm) {
-      return await builder.bundle(entrypointPath, "esm");
+      ops.push(builder.bundle(entrypointPath, "esm"));
     }
 
     if (this.context.formats.isLegacy) {
-      return await builder.bundle(entrypointPath, "legacy");
+      ops.push(builder.bundle(entrypointPath, "legacy"));
     }
 
-    return [];
+    return Promise.all(ops).then(l => l.flat(5));
   }
 
   private async build(builder: Builder) {
