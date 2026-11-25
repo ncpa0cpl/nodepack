@@ -482,11 +482,6 @@
   resolved "https://registry.yarnpkg.com/@tsconfig/node16/-/node16-1.0.3.tgz#472eaab5f15c1ffdd7f8628bd4c4f753995ec79e"
   integrity sha512-yOlFc+7UtL/89t2ZhjPvvB/DeAr3r+Dq58IgzsFkOAvVC6NMJXmCGjbptdXdR9qsX7pKcTL+s87FtYREi2dEEQ==
 
-"@types/json-schema@^7.0.12":
-  version "7.0.12"
-  resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.12.tgz#d70faba7039d5fca54c83c7dbab41051d2b6f6cb"
-  integrity sha512-Hr5Jfhc9eYOQNPYO5WLDq/n4jqijdHNlDXjuAQkkt+mWdQR+XJToOHrsD4cPaMXpn6KO7y2+wM8AZEs8VpBLVA==
-
 "@types/json-schema@^7.0.15":
   version "7.0.15"
   resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.15.tgz#596a1747233694d50f6ad8a7869fcb6f56cf5841"
@@ -824,22 +819,15 @@ diff@^4.0.1:
   resolved "https://registry.yarnpkg.com/diff/-/diff-4.0.2.tgz#60f3aecb89d5fae520c11aa19efc2bb982aade7d"
   integrity sha512-58lmxKSA4BNyLz+HHMUzlOEpg09FV+ev6ZMe3vJihgdxzgcwZ8VoEEPmALCZG9LmqfVoNMMKpttIYTVG6uDY7A==
 
-dilswer@3.2.1:
-  version "3.2.1"
-  resolved "https://registry.yarnpkg.com/dilswer/-/dilswer-3.2.1.tgz#6567407056e8526d8bc83ac34d9d5406be652f85"
-  integrity sha512-8XY0eTUhCE7o/OgtFQdGADPPe9uy7w2hKoruy/kmDGB5qJpU9XqDKNAfekisI+a9z1l2apIR2LkAftOzoOF8ug==
+dilswer@3.2.3:
+  version "3.2.3"
+  resolved "https://registry.yarnpkg.com/dilswer/-/dilswer-3.2.3.tgz#aceb42ed848491ce338a9d27349fb464b5fba19a"
+  integrity sha512-1CBsWDdC7T+WGJnvNNDPG2yksL5D4/sOlnPsnxHAvHDl1CARbJCz7Qbul2IiqZEsUogs3tRgnMfbBPEBCEUf4g==
   dependencies:
     "@types/json-schema" "^7.0.15"
     dedent "^1.7.2"
 
-dilswer@^2.0.2:
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/dilswer/-/dilswer-2.1.1.tgz#82a10b128c3f98b89961b1da04b23e4b91b57bd7"
-  integrity sha512-GTpSyWGniwk19hh1JKrVFsENqFqZv4Ga59JxJW5ZvGHMBLcvcGAj4YPzh2gyiz4CLDPBDXyYF9b+xxVW1Md4RA==
-  dependencies:
-    "@types/json-schema" "^7.0.12"
-
-dilswer@^2.1.1:
+dilswer@^2.0.2, dilswer@^2.1.1:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/dilswer/-/dilswer-2.2.0.tgz#e5ab798185d8e049c9fe819236b4bdb6e77a506c"
   integrity sha512-YAaLrSdXZRZjZ0xOrb5bFiZzy7Mdyz/UQ3mYC+FrDLeh83RWWvG8KgNRid/kYa1UK0toHEXPcuif3EcCUBydWw==
